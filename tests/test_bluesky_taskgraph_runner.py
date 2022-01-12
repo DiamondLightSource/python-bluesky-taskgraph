@@ -1,7 +1,7 @@
 import subprocess
 import sys
 
-from bluesky_taskgraph_runner import __main__, __version__, hello
+from src.bluesky_taskgraph_runner import hello, __main__, __version__
 
 
 def test_hello_class_formats_greeting() -> None:

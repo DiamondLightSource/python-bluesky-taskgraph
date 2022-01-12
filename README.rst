@@ -3,8 +3,8 @@ bluesky_taskgraph_runner
 
 |code_ci| |docs_ci| |coverage| |pypi_version| |license|
 
-This is where you should write a short paragraph that describes what your module does,
-how it does it, and why people should use it.
+A library extending the Bluesky RunEngine to allow TaskGraphs to be run: TaskGraphs are intended to encourage
+parallelism and composability compared to Bluesky native plans by breaking plans into conditional blocks, or tasks.
 
 ============== ==============================================================
 PyPI           ``pip install bluesky_taskgraph_runner``

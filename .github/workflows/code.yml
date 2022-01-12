@@ -54,9 +54,9 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: ["ubuntu-latest"]  # can add windows-latest, macos-latest
-        python: ["3.7", "3.8", "3.9"]
-        pipenv: ["skip-lock"]
+        os: [ "ubuntu-latest" ]  # can add windows-latest, macos-latest
+        python: [ "3.7", "3.8", "3.9" ]
+        pipenv: [ "skip-lock" ]
 
         include:
           # Add an extra Python3.7 runner to use the lockfile
@@ -85,7 +85,7 @@ jobs:
           files: cov.xml
 
   release:
-    needs: [lint, wheel, test]
+    needs: [ lint, wheel, test ]
     runs-on: ubuntu-latest
     # upload to PyPI and make a release on every tag
     if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags')
