@@ -1,24 +1,24 @@
 API
 ===
 
-.. automodule:: dls_python3_skeleton
+.. automodule:: bluesky_taskgraph_runner
 
-    ``dls_python3_skeleton``
+    ``bluesky_taskgraph_runner``
     -----------------------------------
 
-This is the internal API reference for dls_python3_skeleton
+This is the internal API reference for bluesky_taskgraph_runner
 
 You can mix verbose text with docstring and signature extraction by
 using ``autoclass`` and ``autofunction`` directives instead of
 ``automodule`` below.
 
-.. data:: dls_python3_skeleton.__version__
+.. data:: bluesky_taskgraph_runner.__version__
     :type: str
 
     Version number as calculated by https://github.com/dls-controls/versiongit
 
-.. automodule:: dls_python3_skeleton.hello
+.. automodule:: bluesky_taskgraph_runner.hello
     :members:
 
-    ``dls_python3_skeleton.hello``
+    ``bluesky_taskgraph_runner.hello``
     -----------------------------------------
