@@ -3,9 +3,9 @@
 Explanations
 ============
 
-Explanation of how the library works and why it works that way.
+Design rationales:
 
 .. toctree::
     :caption: Explanations
 
-    explanations/why-is-something-so
+    explanations/task-in-out

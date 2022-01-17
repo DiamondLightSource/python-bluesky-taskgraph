@@ -6,6 +6,42 @@ bluesky_taskgraph_runner
 A library extending the Bluesky RunEngine to allow TaskGraphs to be run: TaskGraphs are intended to encourage
 parallelism and composability compared to Bluesky native plans by breaking plans into conditional blocks, or tasks.
 
+Work related to implementing a Task Graph runner (Decision Engine) in Bluesky, akin to the VMXi task graph runner in
+Jython.
+
+The decision engine plan is passed to the RunEngine, optionally by a ControlObject which constructs multiple TaskGraphs
+according to either inbuilt logic or from a recipe involving an external source, and the RunEngine interrogates the plan
+as a Msg generator.
+A TaskGraph contains:
+
+1. A dictionary of plan to a list of plans it is known to be dependent on or else unable to be run concurrently with
+2. A dictionary of plan to list of strings, the names of the arguments it needs
+   We force this to be defined for the task graph (rather than by each task) to prevent accessing prior args
+   Multiple tasks may share an input argument name
+   An input argument may be overwritten later by the output of a task, so a graph should be defined such that if args
+   are going to be overwritten, the overwriting tasks should depend on any that require the previous value
+3. A dictionary of plan to a list of strings, the names of the outputs it will provide
+   We force this to be defined for the task graph (rather than by each task) to prevent overriding prior args
+   The output strings should be at most the length of the outputs of the task, else will be truncated
+   An output argument may overwrite a previous output or initial value, so care should be taken to either avoid this
+   behaviour or have any overwriting tasks depend on any tasks requiring the previous value
+
+The DecisionEnginePlan is additionally passed a dictionary of string to any necessary initial conditions or known values
+atits creation. e.g.
+   Beamline configurations, name etc.
+   Any devices that will be required for the graph
+
+Decision engine plans, their decision engines, the task graphs they are initialised with, and the tasks are intended to
+be run once and then discarded.
+
+Task graphs can be composed of smaller task graphs using the depends_on function, or by simple addition of plans.
+Graph A + Graph B places every entry from each dictionary in Graph B into Graph A's, overwriting existing keys in A
+Graph A being dependent on Graph B is equivalent to every task within Graph A being dependent on every task in Graph B,
+then Graph A = Graph A + Graph B. After depends_on or graph addition, Graph B should be discarded to prevent accidental
+running of tasks again, Graph A now contains all the information Task graphs should **not** contain the same task as
+another graph other than these transient cases.
+
+
 ============== ==============================================================
 PyPI           ``pip install bluesky_taskgraph_runner``
 Source code    https://github.com/dls-controls/bluesky_taskgraph_runner
@@ -13,20 +49,16 @@ Documentation  https://dls-controls.github.io/bluesky_taskgraph_runner
 Releases       https://github.com/dls-controls/bluesky_taskgraph_runner/releases
 ============== ==============================================================
 
-This is where you should put some images or code snippets that illustrate
-some relevant examples. If it is a library then you might put some
-introductory code here:
-
 .. code:: python
 
-    from bluesky_taskgraph_runner.hello import HelloClass
+    # The DecisionEngine requires a slightly modified RunEngine to allow callbacks from long running moves to propagate
+    #  to the task
+    RE = DecisionEngineRunEngine({})
+    # An example ControlObject, which could monitors the state of the beamline 'baton' and returns control when
+    #  required, or else restarts collection when the baton is free.
+    CO = UnattendedDataCollectionControlObject(RE)
+    #CO.run_task_graphs()
 
-    hello = HelloClass("me")
-    print(hello.format_greeting())
-
-Or if it is a commandline tool then you might put some example commands here::
-
-    bluesky_taskgraph_runner person --times=2
 
 .. |code_ci| image:: https://github.com/dls-controls/bluesky_taskgraph_runner/workflows/Code%20CI/badge.svg?branch=master
     :target: https://github.com/dls-controls/bluesky_taskgraph_runner/actions?query=workflow%3A%22Code+CI%22

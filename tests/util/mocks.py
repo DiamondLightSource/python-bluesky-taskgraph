@@ -9,8 +9,8 @@ from src.bluesky_taskgraph_runner.core.task import TaskStatus, BlueskyTask
 from src.bluesky_taskgraph_runner.core.types import PlanArgs, PlanOutput
 
 
-def mock_task(wrapped_task: BlueskyTask = None, name: str = None):
-    wrapped_task = wrapped_task or BlueskyTask(name or "Mock task")
+def mock_task(wrapped_task: BlueskyTask = None, name: str = "Mock task") -> BlueskyTask:
+    wrapped_task = wrapped_task or BlueskyTask(name=name)
     task = Mock(wraps=wrapped_task)
 
     def _run_task(args=None):
@@ -36,7 +36,7 @@ def mock_task(wrapped_task: BlueskyTask = None, name: str = None):
     return task
 
 
-def mock_device(device: Device = None, name: str = "Mock Device"):
+def mock_device(device: Device = None, name: str = "Mock Device") -> Device:
     device = device or SynAxis(name=name)
     mock = Mock(wraps=device)
 

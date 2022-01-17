@@ -108,10 +108,10 @@ class DecisionEngineControlObject(SuspendCeil):
             self._error_tasks.pop(task_name)
         self._set_signal_most_exceptions()
 
-    def do_things(self) -> None:
-        while True:
+    def run_task_graphs(self) -> None:
+        while self._run_engine.state not in ["paused", "pausing"]:
             if self._should_stop_at_end_of_next_run:
-                self._run_engine.request_pause(True)
+                self._run_engine.request_pause(False)
             else:
                 self._run_engine(self.decision_engine_plan(self._create_next_graph(), self._known_values))
 
@@ -241,8 +241,7 @@ class DecisionEngine:
             raise Exception(f"Unknown values! {unknown_values}")
 
 
-def decision_engine_plan(task_graph: TaskGraph,
-                         variables: Variables = None,
+def decision_engine_plan(task_graph: TaskGraph, variables: Variables = None,
                          exception_handling: Optional[Callable[[str, Exception], None]] = None) -> PlanOutput:
     if not variables:
         variables = {}
