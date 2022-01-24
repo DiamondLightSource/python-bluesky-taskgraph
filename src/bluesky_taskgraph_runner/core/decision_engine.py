@@ -44,6 +44,7 @@ class DecisionEngineRunEngine(RunEngine):
 # TODO: Understand what this needs to do and how to do it
 # TODO: Possibility of multiple ControlObjects, should ones exceptions stop another?
 # TODO: Allow disconnection/passing of control
+# TODO: Should the ControlObject instead be a plan, that constructed DecisionEnginePlans and yields from them?
 class DecisionEngineControlObject(SuspendCeil):
     """
     An object that controls the production and submission of decision_engine_plans

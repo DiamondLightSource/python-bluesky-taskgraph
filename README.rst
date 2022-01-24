@@ -44,9 +44,9 @@ another graph other than these transient cases.
 
 ============== ==============================================================
 PyPI           ``pip install bluesky_taskgraph_runner``
-Source code    https://github.com/dls-controls/bluesky_taskgraph_runner
-Documentation  https://dls-controls.github.io/bluesky_taskgraph_runner
-Releases       https://github.com/dls-controls/bluesky_taskgraph_runner/releases
+Source code    https://github.com/DiamondLightSource/bluesky_taskgraph_runner
+Documentation  https://DiamondLightSource.github.io/bluesky_taskgraph_runner
+Releases       https://github.com/DiamondLightSource/bluesky_taskgraph_runner/releases
 ============== ==============================================================
 
 .. code:: python
@@ -60,16 +60,16 @@ Releases       https://github.com/dls-controls/bluesky_taskgraph_runner/releases
     #CO.run_task_graphs()
 
 
-.. |code_ci| image:: https://github.com/dls-controls/bluesky_taskgraph_runner/workflows/Code%20CI/badge.svg?branch=master
-    :target: https://github.com/dls-controls/bluesky_taskgraph_runner/actions?query=workflow%3A%22Code+CI%22
+.. |code_ci| image:: https://github.com/DiamondLightSource/bluesky_taskgraph_runner/workflows/Code%20CI/badge.svg?branch=master
+    :target: https://github.com/DiamondLightSource/bluesky_taskgraph_runner/actions?query=workflow%3A%22Code+CI%22
     :alt: Code CI
 
-.. |docs_ci| image:: https://github.com/dls-controls/bluesky_taskgraph_runner/workflows/Docs%20CI/badge.svg?branch=master
-    :target: https://github.com/dls-controls/bluesky_taskgraph_runner/actions?query=workflow%3A%22Docs+CI%22
+.. |docs_ci| image:: https://github.com/DiamondLightSource/bluesky_taskgraph_runner/workflows/Docs%20CI/badge.svg?branch=master
+    :target: https://github.com/DiamondLightSource/bluesky_taskgraph_runner/actions?query=workflow%3A%22Docs+CI%22
     :alt: Docs CI
 
-.. |coverage| image:: https://codecov.io/gh/dls-controls/bluesky_taskgraph_runner/branch/master/graph/badge.svg
-    :target: https://codecov.io/gh/dls-controls/bluesky_taskgraph_runner
+.. |coverage| image:: https://codecov.io/gh/DiamondLightSource/bluesky_taskgraph_runner/branch/master/graph/badge.svg
+    :target: https://codecov.io/gh/DiamondLightSource/bluesky_taskgraph_runner
     :alt: Test Coverage
 
 .. |pypi_version| image:: https://img.shields.io/pypi/v/bluesky_taskgraph_runner.svg
@@ -84,4 +84,4 @@ Releases       https://github.com/dls-controls/bluesky_taskgraph_runner/releases
     Anything below this line is used when viewing README.rst and will be replaced
     when included in index.rst
 
-See https://dls-controls.github.io/bluesky_taskgraph_runner for more detailed documentation.
+See https://DiamondLightSource.github.io/bluesky_taskgraph_runner for more detailed documentation.
