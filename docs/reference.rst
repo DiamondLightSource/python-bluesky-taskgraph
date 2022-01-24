@@ -9,7 +9,7 @@ Practical step-by-step guides for the more experienced user.
     :caption: Reference
 
     reference/contributing
-    Releases <https://github.com/DiamondLightSource/bluesky_taskgraph_runner/releases>
+    Releases <https://github.com/DiamondLightSource/python-bluesky-taskgraph/releases>
     Index <genindex.html#http://>
 
 ..

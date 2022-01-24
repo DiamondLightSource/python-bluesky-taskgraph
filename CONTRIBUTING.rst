@@ -7,7 +7,7 @@ filing a new one. If you have a great idea but it involves big changes, please
 file a ticket before making a pull request! We want to make sure you don't spend
 your time coding something that might not fit the scope of the project.
 
-.. _GitHub: https://github.com/DiamondLightSource/bluesky_taskgraph_runner/issues
+.. _GitHub: https://github.com/DiamondLightSource/python-bluesky-taskgraph/issues
 
 Running the tests
 -----------------
