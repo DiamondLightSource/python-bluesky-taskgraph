@@ -7,7 +7,8 @@ from ophyd import DeviceStatus, Signal
 from ophyd.sim import SynAxis
 from ophyd.utils import DestroyedError
 
-from src.bluesky_taskgraph_runner.core.decision_engine import DecisionEngineControlObject
+from src.bluesky_taskgraph_runner.core.decision_engine import \
+    DecisionEngineControlObject
 from src.bluesky_taskgraph_runner.core.task import TaskStop, TaskFail
 from src.bluesky_taskgraph_runner.core.task_graph import TaskGraph
 from src.bluesky_taskgraph_runner.tasks.stub_tasks import SetTask
@@ -44,7 +45,9 @@ class FailingDecisionEngineControlObject(DecisionEngineControlObject):
         failing_task = RecoveringFromNonFatalExceptionSetTask("Failing Task")
         future_task = SetTask("Future task")
 
-        return TaskGraph({prior_task: [], failing_task: [prior_task], future_task: [failing_task]},
+        return TaskGraph({prior_task: [],
+                          failing_task: [prior_task],
+                          future_task: [failing_task]},
                          {failing_task: ["second_device", "value"],
                           prior_task: ["first_device", "value"],
                           future_task: ["third_device", "value"]}, {})
@@ -52,9 +55,10 @@ class FailingDecisionEngineControlObject(DecisionEngineControlObject):
 
 class RecoveringFromNonFatalExceptionSetTask(SetTask):
     """
-    A Task with a known, non-fatal exception state that should cause the current task graph to fail and attempt the next
-    loop.
+    A Task with a known, non-fatal exception state that should cause the current task
+    graph to fail and attempt the next loop.
     """
+
     def _handle_exception(self, exception: Exception):
         if isinstance(exception, DestroyedError):
             exception = TaskStop()
@@ -66,10 +70,12 @@ class RecoveringFromNonFatalExceptionSetTask(SetTask):
 #     re = RunEngine({})
 #     broken_device = mock_device(FailingDevice("Sticky motor", fatal_exception=False))
 #     working_device = mock_device(name="Counting device")
-#     control = FailingDecisionEngineControlObject(re, known_values={"first_device": working_device,
-#                                                                    "second_device": broken_device,
-#                                                                    "third_device": working_device,
-#                                                                    "value": 7})
+#     control = FailingDecisionEngineControlObject(re,
+#                                                  known_values=
+#                                                  {"first_device": working_device,
+#                                                   "second_device": broken_device,
+#                                                   "third_device": working_device,
+#                                                   "value": 7})
 #
 #     try:
 #         control.run_task_graphs()
@@ -77,7 +83,8 @@ class RecoveringFromNonFatalExceptionSetTask(SetTask):
 #         expected_calls = [call.set(7)] * 3
 #
 #         for device in [broken_device, working_device]:
-#             filtered_calls = [calls for calls in device.mock_calls if calls in expected_calls]
+#             filtered_calls = [calls for calls in device.mock_calls
+#                               if calls in expected_calls]
 #             assert(filtered_calls == expected_calls)
 
 
@@ -86,17 +93,20 @@ class RecoveringFromNonFatalExceptionSetTask(SetTask):
 #     re = RunEngine({})
 #     broken_device = mock_device(FailingDevice("Sticky motor", fatal_exception=True))
 #     working_device = mock_device(name="Counting device")
-#     control = FailingDecisionEngineControlObject(re, known_values={"first_device": working_device,
-#                                                                    "second_device": broken_device,
-#                                                                    "third_device": working_device,
-#                                                                    "value": 7})
+#     control = FailingDecisionEngineControlObject(re,
+#                                                  known_values={
+#                                                      "first_device": working_device,
+#                                                      "second_device": broken_device,
+#                                                      "third_device": working_device,
+#                                                      "value": 7})
 #     try:
 #         control.run_task_graphs()
 #     except FailedStatus:
 #         expected_calls = [call.set(7)]
 #
 #         for device in [broken_device, working_device]:
-#             filtered_calls = [calls for calls in device.mock_calls if calls in expected_calls]
+#             filtered_calls = [calls for calls in device.mock_calls
+#                               if calls in expected_calls]
 #             assert(filtered_calls == expected_calls)
 
 
@@ -105,14 +115,17 @@ def test_no_exception_to_completion():
     first_device = mock_device(name="First device")
     second_device = mock_device(name="Second device")
     third_device = mock_device(name="Third device")
-    control = FailingDecisionEngineControlObject(re, known_values={"first_device": first_device,
-                                                                   "second_device": second_device,
-                                                                   "third_device": third_device,
-                                                                   "value": 7})
+    control = FailingDecisionEngineControlObject(re,
+                                                 known_values={
+                                                     "first_device": first_device,
+                                                     "second_device": second_device,
+                                                     "third_device": third_device,
+                                                     "value": 7})
     control.run_task_graphs()
 
     expected_calls = [call.set(7)] * 5
 
     for device in [first_device, second_device, third_device]:
-        filtered_calls = [calls for calls in device.mock_calls if calls in expected_calls]
-        assert(filtered_calls == expected_calls)
+        filtered_calls = [calls for calls in device.mock_calls
+                          if calls in expected_calls]
+        assert (filtered_calls == expected_calls)

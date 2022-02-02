@@ -22,7 +22,8 @@ penultimate_tasks = get_penultimate_tasks()
 second_tasks = get_second_tasks()
 first_tasks = get_first_tasks()
 
-tasks = final_tasks.depends_on(penultimate_tasks)....depends_on(second_tasks).depends_on(first_tasks)
+tasks = final_tasks.depends_on(penultimate_tasks).[...]
+    .depends_on(second_tasks).depends_on(first_tasks)
 or 
 tasks = first_tasks.are_dependent_on(second_tasks)...
 
@@ -34,7 +35,9 @@ def test_order_of_tasks():
     second_task = mock_task(name="Second Task")
     third_task = mock_task(name="Third Task")
 
-    tasks = TaskGraph({first_task: [], second_task: [first_task], third_task: [second_task]}, {}, {})
+    tasks = TaskGraph({first_task: [],
+                       second_task: [first_task],
+                       third_task: [second_task]}, {}, {})
     manager = Mock()
 
     manager.first_task = first_task
@@ -145,24 +148,34 @@ def test_graph_runs_tasks_concurrent():
     fast_device = SynAxis(name="Fast Device", delay=0.5)
     location = 7
 
-    def slow_move(device: Device, value: Any, group: Optional[str] = None) -> PlanOutput:
-        ret: Optional[Status] = yield from abs_set(device, value, group=group or slow_task.name())
+    def slow_move(device: Device, value: Any,
+                  group: Optional[str] = None) -> PlanOutput:
+        ret: Optional[Status] = yield from abs_set(device, value,
+                                                   group=group or slow_task.name())
         # The wait is a success if the set was a success
         ret.add_callback(slow_task.propagate_status)
         return slow_task._status
 
-    def fast_move(device: Device, value: Any, group: Optional[str] = None) -> PlanOutput:
-        ret: Optional[Status] = yield from abs_set(device, value, group=group or fast_task.name())
+    def fast_move(device: Device, value: Any,
+                  group: Optional[str] = None) -> PlanOutput:
+        ret: Optional[Status] = yield from abs_set(device, value,
+                                                   group=group or fast_task.name())
         # The wait is a success if the set was a success
         ret.add_callback(fast_task.propagate_status)
         return fast_task._status
 
-    # Run the actual set behaviour, which sets a status to done only once the move is complete
+    # Run the actual set behaviour,
+    #   which sets a status to done only once the move is complete
     slow_task._run_task.side_effect = slow_move
     fast_task._run_task.side_effect = fast_move
 
-    tasks = TaskGraph({slow_task: [], fast_task: [], after_slow: [slow_task], after_fast: [fast_task]}, {
-        slow_task: ["slow device", "location"], fast_task: ["fast device", "location"]}, {})
+    tasks = TaskGraph({slow_task: [],
+                       fast_task: [],
+                       after_slow: [slow_task],
+                       after_fast: [fast_task]},
+                      {slow_task: ["slow device", "location"],
+                       fast_task: ["fast device", "location"]},
+                      {})
 
     manager = Mock()
 
@@ -171,8 +184,8 @@ def test_graph_runs_tasks_concurrent():
     manager.after_slow = after_slow
     manager.after_fast = after_fast
 
-    # Cannot guarantee order of slow task and fast task beginning, but only want to guarantee that after-fast runs
-    #  before slow finishes
+    # Cannot guarantee order of slow task and fast task beginning, but only want to
+    # guarantee that after-fast runs before slow finishes
     expected_calls = [
         call.slow_task.execute([slow_device, location]),
         call.after_fast.execute([]),
@@ -183,7 +196,10 @@ def test_graph_runs_tasks_concurrent():
     ]
     re = RunEngine({})
 
-    re(decision_engine_plan(tasks, {"slow device": slow_device, "fast device": fast_device, "location": location}))
+    re(decision_engine_plan(tasks,
+                            {"slow device": slow_device,
+                             "fast device": fast_device,
+                             "location": location}))
 
     for expected_call in expected_calls:
         assert expected_call in manager.mock_calls

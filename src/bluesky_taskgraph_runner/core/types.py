@@ -3,9 +3,11 @@ from typing import Dict, Any, List, Optional, Generator, Callable
 from bluesky import Msg
 from bluesky.protocols import Status
 
-Graph = Dict['BlueskyTask', List['BlueskyTask']]
-Input = Dict['BlueskyTask', List[str]]
-Output = Dict['BlueskyTask', List[str]]
+BlueskyTask = "src.bluesky_taskgraph_runner.core.task.BlueskyTask"
+
+Graph = Dict[BlueskyTask, List[BlueskyTask]]
+Input = Dict[BlueskyTask, List[str]]
+Output = Dict[BlueskyTask, List[str]]
 
 Variables = Dict[str, Any]
 PlanArgs = Optional[List[Any]]

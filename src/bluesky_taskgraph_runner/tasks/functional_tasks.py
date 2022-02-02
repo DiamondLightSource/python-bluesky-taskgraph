@@ -11,7 +11,8 @@ from src.bluesky_taskgraph_runner.tasks.behavioural_tasks import read_device
 
 class DeviceCallbackTask(BlueskyTask):
     """
-    Utility Task to define a task that waits for a Device to finish moving before considering itself complete
+    Utility Task to define a task that waits for a Device to finish moving before
+    considering itself complete
     """
 
     def propagate_status(self, status: Status):
@@ -20,7 +21,8 @@ class DeviceCallbackTask(BlueskyTask):
             # status.device is Movable, so must be Readable
             # TODO: Need to extract the actual ax[is/es] we need...
             self.add_result(read_device(status.device))
-        # TODO: What do we get if it's not DeviceStatus and is it ever going to be not DeviceStatus?
+        # TODO: What do we get if it's not DeviceStatus and is it ever going to be not
+        #  DeviceStatus?
 
 
 class DeviceTask(DeviceCallbackTask):
@@ -55,11 +57,12 @@ class ReadBeamlineState(BlueskyTask):
 
 class PlanTask(BlueskyTask):
     """
-    TODO: Is there a better way to do this?
-    Task that yields all instructions from a pre-existing plan or plan stub. Any non-kwargs should be passed as a list
-    to the kwargs map with name "args" TODO: Is there a better way to do this?
-    Should be called with a dictionary of str (argument name) to any (argument) as appropriate for the Plan, without
-    any unknown method args.
+    TODO: Is there a better way to do this kind of task?
+    Task that yields all instructions from a pre-existing plan or plan stub.
+    Any non-kwargs should be passed as a list to the kwargs map with name "args"
+    TODO: Is there a better way to do this passing of args?
+    Should be called with a dictionary of str (argument name) to any (argument) as
+    appropriate for the Plan, without any unknown method args.
     """
 
     def __init__(self, name: str, plan: PlanCallable):
