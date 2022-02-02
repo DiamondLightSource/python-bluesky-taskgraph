@@ -23,6 +23,7 @@ jobs:
         uses: dls-controls/pipenv-run-action@v1
         with:
           pipenv-run: lint
+          python-version: 3.8
 
   wheel:
     runs-on: "ubuntu-latest"
@@ -59,7 +60,7 @@ jobs:
         pipenv: [ "skip-lock" ]
 
         include:
-          # Add an extra Python3.7 runner to use the lockfile
+          # Add an extra Python3.8 runner to use the lockfile
           - os: "ubuntu-latest"
             python: "3.8"
             pipenv: "deploy"
