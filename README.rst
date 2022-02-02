@@ -51,13 +51,16 @@ Releases       https://github.com/DiamondLightSource/python-bluesky-taskgraph/re
 
 .. code:: python
 
-    # The DecisionEngine requires a slightly modified RunEngine to allow callbacks from long running moves to propagate
-    #  to the task
-    RE = DecisionEngineRunEngine({})
+    # The TaskGraph plan can utilise the native Bluesky RunEngine: in Python 3.8 or
+    #  above
+    RE = RunEngine({})
     # An example ControlObject, which could monitors the state of the beamline 'baton' and returns control when
     #  required, or else restarts collection when the baton is free.
     CO = UnattendedDataCollectionControlObject(RE)
-    #CO.run_task_graphs()
+    CO.run_task_graphs()
+
+    # Or else, the RunEngine can run a decision_engine_plan, wrapping a TaskGraph
+    RE(decision_engine_plan(task_graph, variables or {}))
 
 
 .. |code_ci| image:: https://github.com/DiamondLightSource/python-bluesky-taskgraph/workflows/Code%20CI/badge.svg?branch=master
@@ -68,8 +71,8 @@ Releases       https://github.com/DiamondLightSource/python-bluesky-taskgraph/re
     :target: https://github.com/DiamondLightSource/python-bluesky-taskgraph/actions?query=workflow%3A%22Docs+CI%22
     :alt: Docs CI
 
-.. |coverage| image:: https://codecov.io/gh/DiamondLightSource/python_bluesky_taskgraph/branch/master/graph/badge.svg
-    :target: https://codecov.io/gh/DiamondLightSource/python_bluesky_taskgraph
+.. |coverage| image:: https://codecov.io/gh/DiamondLightSource/python-bluesky-taskgraph/branch/master/graph/badge.svg
+    :target: https://codecov.io/gh/DiamondLightSource/python-bluesky-taskgraph
     :alt: Test Coverage
 
 .. |pypi_version| image:: https://img.shields.io/pypi/v/python_bluesky_taskgraph.svg

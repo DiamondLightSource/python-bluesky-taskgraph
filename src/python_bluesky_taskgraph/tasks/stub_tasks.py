@@ -1,15 +1,26 @@
-from typing import Optional, Any, List
+from typing import Any, List, Optional
 
-from bluesky.plan_stubs import sleep, wait, abs_set, stage, create, read, save, \
-    open_run, close_run
+from bluesky.plan_stubs import (
+    abs_set,
+    close_run,
+    create,
+    open_run,
+    read,
+    save,
+    sleep,
+    stage,
+    wait,
+)
 from bluesky.protocols import Status
 from ophyd import Device
 
 from python_bluesky_taskgraph.core.task import BlueskyTask
-from python_bluesky_taskgraph.core.types import PlanOutput, KwArgs
+from python_bluesky_taskgraph.core.types import KwArgs, PlanOutput
 from python_bluesky_taskgraph.tasks.behavioural_tasks import read_device
-from python_bluesky_taskgraph.tasks.functional_tasks import DeviceCallbackTask, \
-    DeviceTask
+from python_bluesky_taskgraph.tasks.functional_tasks import (
+    DeviceCallbackTask,
+    DeviceTask,
+)
 
 
 # TODO: Are these useful? Tasks should be larger than plan stubs,

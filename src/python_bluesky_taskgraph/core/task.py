@@ -1,6 +1,6 @@
 import logging
 from time import time
-from typing import Callable, Any, Dict, List, Optional, Set
+from typing import Any, Callable, Dict, List, Optional, Set
 
 from ophyd.status import Status
 
@@ -80,7 +80,7 @@ class BlueskyTask:
     """
     Add a callback for the status of this Task to call once the Task is complete:
     whether successful or not.
-    This will contain a callback to the DecisionEngine, to allow it to update its Set 
+    This will contain a callback to the DecisionEngine, to allow it to update its Set
     of tasks that have completed
     """
 
@@ -93,9 +93,9 @@ class BlueskyTask:
     """
     Propagate the status of another Status into the Status of this Task.
       e.g. is a Task causes a long running movement, its Status should not be
-       considered complete until the movement is complete. Tasks that do so should 
+       considered complete until the movement is complete. Tasks that do so should
        therefore propagate the completion of the Status of the long running operation
-    Tasks tracking multiple movements, or those with more precise expected statuses may 
+    Tasks tracking multiple movements, or those with more precise expected statuses may
     wish to override this method
     """
 
@@ -127,8 +127,8 @@ class BlueskyTask:
         return self._callbacks
 
     """
-    To track the status of the task for the decision engine, we must create a 
-    TaskStatus with a callback to the DecisionEngine (handled by the constructor). 
+    To track the status of the task for the decision engine, we must create a
+    TaskStatus with a callback to the DecisionEngine (handled by the constructor).
     We additionally log that the Task has started.
     We return the Status in case it is helpful to wherever we are being called:
     the decision engine, or else a ConditionalTask, etc.
@@ -143,7 +143,7 @@ class BlueskyTask:
 
     """
     The actual commands to be executed by this task.
-    This should set the status of the task as finished if this is not updated by a 
+    This should set the status of the task as finished if this is not updated by a
     callback from another status
     """
 
@@ -162,8 +162,8 @@ class BlueskyTask:
 
     """
     Maps a List of names to the list of results we have.
-    Prior results that are not wanted can be ignored by passing None as the argument 
-      in its position of the list. 
+    Prior results that are not wanted can be ignored by passing None as the argument
+      in its position of the list.
     Tail end results that are not wanted can be ignored by passing a list shorter than
       the number of results, as zip truncates the lists
     """

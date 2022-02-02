@@ -1,14 +1,18 @@
 import logging
-from typing import Tuple, Iterator, List, Any, Optional, Callable, Dict
+from typing import Any, Callable, Dict, Iterator, List, Optional, Tuple
 
 from bluesky import RunEngine
 from bluesky.suspenders import SuspendCeil
 from ophyd import Signal
 
-from python_bluesky_taskgraph.core.task import DecisionEngineKnownException, TaskFail, \
-    TaskStatus, BlueskyTask
+from python_bluesky_taskgraph.core.task import (
+    BlueskyTask,
+    DecisionEngineKnownException,
+    TaskFail,
+    TaskStatus,
+)
 from python_bluesky_taskgraph.core.task_graph import TaskGraph
-from python_bluesky_taskgraph.core.types import Variables, PlanOutput
+from python_bluesky_taskgraph.core.types import PlanOutput, Variables
 
 logger = logging.getLogger("task")
 
@@ -181,8 +185,8 @@ class DecisionEngine:
             task.add_complete_callback(self.finish_task)
 
     """
-    Callback function to be passed to a Task for it to report back to the 
-    DecisionEngine when it is complete, rather than requiring the DecisionEngine to 
+    Callback function to be passed to a Task for it to report back to the
+    DecisionEngine when it is complete, rather than requiring the DecisionEngine to
     check its state.
     """
 

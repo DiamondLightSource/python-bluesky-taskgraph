@@ -4,7 +4,7 @@ from unittest.mock import Mock
 from ophyd import Device
 from ophyd.sim import SynAxis
 
-from python_bluesky_taskgraph.core.task import TaskStatus, BlueskyTask
+from python_bluesky_taskgraph.core.task import BlueskyTask, TaskStatus
 from python_bluesky_taskgraph.core.types import PlanArgs, PlanOutput
 
 

@@ -14,7 +14,7 @@ Running the tests
 
 To get the source source code and run the unit tests, run::
 
-    $ git clone git://github.com/DiamondLightSource/python_bluesky_taskgraph.git
+    $ git clone git://github.com/DiamondLightSource/python-bluesky-taskgraph.git
     $ cd python_bluesky_taskgraph
     $ pipenv install --dev
     $ pipenv run tests

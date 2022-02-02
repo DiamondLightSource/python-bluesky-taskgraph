@@ -2,10 +2,10 @@ from typing import List, Optional
 
 from bluesky.plan_stubs import create, read, save
 from bluesky.protocols import Status
-from ophyd import DeviceStatus, Device
+from ophyd import Device, DeviceStatus
 
 from python_bluesky_taskgraph.core.task import BlueskyTask
-from python_bluesky_taskgraph.core.types import PlanOutput, KwArgs, PlanCallable
+from python_bluesky_taskgraph.core.types import KwArgs, PlanCallable, PlanOutput
 from python_bluesky_taskgraph.tasks.behavioural_tasks import read_device
 
 
@@ -67,7 +67,7 @@ class PlanTask(BlueskyTask):
 
     def __init__(self, name: str, plan: PlanCallable):
         super().__init__(name)
-        self._plan = plan
+        self._plan: PlanCallable = plan
 
     def _run_task(self, kwargs: KwArgs = None) -> PlanOutput:
         if kwargs is None:
