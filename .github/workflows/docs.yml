@@ -27,6 +27,7 @@ jobs:
         uses: dls-controls/pipenv-run-action@v1
         with:
           pipenv-run: docs
+          python-version: "3.8"
 
       - name: Move to versioned directory
         # e.g. master or 0.1.2
