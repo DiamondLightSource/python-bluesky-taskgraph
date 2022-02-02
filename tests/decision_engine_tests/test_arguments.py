@@ -34,7 +34,9 @@ def test_taskgraph_passes_args():
     ]
     re = RunEngine({})
 
-    re(decision_engine_plan(tasks, {"output": "expected output", "input": "expected input"}))
+    re(decision_engine_plan(tasks,
+                            {"output": "expected output",
+                             "input": "expected input"}))
 
     for expected_call in expected_calls:
         assert expected_call in manager.mock_calls

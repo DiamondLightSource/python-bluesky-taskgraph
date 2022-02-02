@@ -25,7 +25,8 @@ def mock_task(wrapped_task: BlueskyTask = None, name: str = "Mock task") -> Blue
     def execute(args: PlanArgs) -> PlanOutput:
         task._status = TaskStatus(task=task)
         wrapped_task._status = task._status
-        task._logger.info(msg=f"Task {task.name} started at {time()}, with args: {args}")
+        task._logger.info(
+            msg=f"Task {task.name} started at {time()}, with args: {args}")
         yield from task._run_task(*args)
         return wrapped_task._status
 

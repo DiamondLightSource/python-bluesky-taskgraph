@@ -1,22 +1,24 @@
-import uuid
 from typing import Optional, Any, List
 
-from bluesky import Msg
-from bluesky.plan_stubs import sleep, wait, abs_set, stage, create, read, save
+from bluesky.plan_stubs import sleep, wait, abs_set, stage, create, read, save, \
+    open_run, close_run
 from bluesky.protocols import Status
 from ophyd import Device
 
 from src.bluesky_taskgraph_runner.core.task import BlueskyTask
 from src.bluesky_taskgraph_runner.core.types import PlanOutput, KwArgs
-# TODO: Are these useful? Tasks should be larger than plan stubs, should be a chunk of behaviour.
-#  e.g. not abs_set(device, location) but "Move devices out of beam"
 from src.bluesky_taskgraph_runner.tasks.behavioural_tasks import read_device
-from src.bluesky_taskgraph_runner.tasks.functional_tasks import DeviceCallbackTask, DeviceTask
+from src.bluesky_taskgraph_runner.tasks.functional_tasks import DeviceCallbackTask, \
+    DeviceTask
 
 
+# TODO: Are these useful? Tasks should be larger than plan stubs,
+#  should be a chunk of behaviour.
+#  e.g. not abs_set(device, location) but "Move devices out of beam"
 class OpenRunTask(BlueskyTask):
     """
-    Task to open a Bluesky run: the run_id is randomly generated and available as a result of this task
+    Task to open a Bluesky run: the run_id is randomly generated and available as a
+    result of this task
     execute args:
         md: optional dictionary of metadata to associate with the run in the RunEngine
     results:
@@ -30,8 +32,7 @@ class OpenRunTask(BlueskyTask):
         super().__init__("Open Run Task")
 
     def _run_task(self, md: KwArgs = None) -> PlanOutput:
-        # We want to be able to return the run id so we can close it later, so we cannot use the plan stub
-        run_id = yield Msg('open_run', None, **(md or {}))
+        run_id = yield from open_run(md)
         self.add_result(run_id)
         yield from BlueskyTask._run_task(self)
 
@@ -39,10 +40,10 @@ class OpenRunTask(BlueskyTask):
 class CloseRunTask(BlueskyTask):
     """
     Task to close a Bluesky run: exit_status and reason are optional.
-    Default case: exit_status = None, reason = None and the values are taken from the RunEngine- these should only be
-    overridden if the task knows something the RunEngine doesn't: e.g. results of external processing
+    Default case: exit_status = None, reason = None and the values are taken from the
+    RunEngine- these should only be overridden if the task knows something the
+    RunEngine doesn't: e.g. results of external processing
     execute args:
-        run_id: the uuid of the assosciated run: available as a result of the OpenRunTask
         exit_status: {None, 'success', 'abort', 'fail'} the final status of the run
         reason: a long form string explaining the exit_status
     results:
@@ -55,17 +56,17 @@ class CloseRunTask(BlueskyTask):
     def __init__(self):
         super().__init__("Close Run Task")
 
-    def _run_task(self, run_id: uuid.UUID, exit_status: Optional[str] = None, reason: Optional[str] = None) \
-            -> PlanOutput:
-        # We need to know the run we close (we may need to open and close several plans within a task!)
-        run_id = yield Msg('close_run', None, run=run_id, exit_status=exit_status, reason=reason)
+    def _run_task(self, exit_status: Optional[str] = None, reason: Optional[str] =
+    None) -> PlanOutput:
+        run_id = yield from close_run(exit_status, reason)
         self.add_result(run_id)
         yield from BlueskyTask._run_task(self)
 
 
 class SleepTask(BlueskyTask):
     """
-    Task to request a sleep on the current plan without interrupting the RunEngine's processing of interrupts etc.
+    Task to request a sleep on the current plan without interrupting the RunEngine's
+    processing of interrupts etc.
     execute args:
         sleep_time: time to wait (in seconds) before continuing the generator.
             Optional: if not set falls back to a constructor arg or 1 second
@@ -87,9 +88,8 @@ class SleepTask(BlueskyTask):
 
 class WaitTask(BlueskyTask):
     """
-    Task to request the RunEngine waits until all statuses associated with a group have finished before continuing to
-    the next task, using the status of the group as the status of completion of the task. e.g. a finished move or a
-    failed kickoff will propagate its status up to this task, in turn propagating to the DecisionEngine
+    Task to request the RunEngine waits until all statuses associated with a group
+    have finished before continuing to the next task
     execute args:
         group: name of a group.
     result:
@@ -106,13 +106,14 @@ class WaitTask(BlueskyTask):
 
 class SetTask(DeviceCallbackTask):
     """
-    Task to request the RunEngine set a Movable to a value, completes when the move is completed. Can be added to a
-    group if required, otherwise a group is constructed from the name of this task, so these tasks should be usefully
-    named
+    Task to request the RunEngine set a Movable to a value, completes when the move is
+    completed. Can be added to a group if required, otherwise a group is constructed
+    from the name of this task, so these tasks should be usefully named
     execute args:
         device: a Movable
         value: a value that the Movable can be set to.
-        group: an optional name for the group that tracks the movement, else assumed to be in a group of just this task
+        group: an optional name for the group that tracks the movement,
+          else assumed to be in a group of just this task
     result:
         value of the Movable before it is requested to move
         value of the Movable after reporting its status is finished
@@ -121,9 +122,11 @@ class SetTask(DeviceCallbackTask):
     :func:`bluesky.plan_stubs.set`
     """
 
-    def _run_task(self, device: Device, value: Any, group: Optional[str] = None) -> PlanOutput:
+    def _run_task(self, device: Device, value: Any, group: Optional[str] = None) \
+            -> PlanOutput:
         self.add_result(read_device(device))
-        ret: Optional[Status] = yield from abs_set(device, value, group=group or self.name())
+        ret: Optional[Status] = yield from abs_set(device, value,
+                                                   group=group or self.name())
         if ret:
             ret.add_callback(self.propagate_status)
         else:
@@ -134,7 +137,8 @@ class SetDeviceTask(DeviceTask):
 
     def _run_task(self, value: Any, group: Optional[str] = None) -> PlanOutput:
         self.add_result(read_device(self._device))
-        ret: Optional[Status] = yield from abs_set(self._device, value, group=group or self.name())
+        ret: Optional[Status] = yield from abs_set(self._device, value,
+                                                   group=group or self.name())
         if ret:
             ret.add_callback(self.propagate_status)
         else:
@@ -148,7 +152,8 @@ class SetKnownValueDeviceTask(DeviceTask):
 
     def _run_task(self, group: Optional[str]) -> PlanOutput:
         self.add_result(read_device(self._device))
-        ret: Optional[Status] = yield from abs_set(self._device, self._value, group=group or self.name())
+        ret: Optional[Status] = yield from abs_set(self._device, self._value,
+                                                   group=group or self.name())
         if ret:
             ret.add_callback(self.propagate_status)
         else:
@@ -182,7 +187,8 @@ class StageDeviceTask(DeviceTask):
 
 class ReadDevicesAndEmitEventDocument(BlueskyTask):
     """
-    Task to request the RunEngine read all devices into a document, then emit it in a given stream,
+    Task to request the RunEngine read all devices into a document, then emit it in a
+    given stream,
     e.g. "Darks", "Flats", "Primary"
     See Also
     --------

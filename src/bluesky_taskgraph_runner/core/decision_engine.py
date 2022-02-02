@@ -5,7 +5,8 @@ from bluesky import RunEngine
 from bluesky.suspenders import SuspendCeil
 from ophyd import Signal
 
-from src.bluesky_taskgraph_runner.core.task import DecisionEngineKnownException, TaskFail, TaskStatus, BlueskyTask
+from src.bluesky_taskgraph_runner.core.task import DecisionEngineKnownException, \
+    TaskFail, TaskStatus, BlueskyTask
 from src.bluesky_taskgraph_runner.core.task_graph import TaskGraph
 from src.bluesky_taskgraph_runner.core.types import Variables, PlanOutput
 
@@ -16,26 +17,29 @@ logger = logging.getLogger("task")
 # TODO: Understand what this needs to do and how to do it
 # TODO: Possibility of multiple ControlObjects, should ones exceptions stop another?
 # TODO: Allow disconnection/passing of control
-# TODO: Should the ControlObject instead be a plan, that constructed DecisionEnginePlans and yields from them?
+# TODO: Should the ControlObject instead be a plan, that constructs
+#  DecisionEnginePlans and yields from them?
 class DecisionEngineControlObject(SuspendCeil):
     """
     An object that controls the production and submission of decision_engine_plans
-    e.g. An object that polls an external service for recipes, conditionally constructs plans and submits them to the
-    run engine.
-    e.g. holds a timer for when the robot arm needs to be chilled and constructs the next plan to be run with that graph
-    As graphs can be composed by all_tasks = tasks + more_tasks, or all_tasks = tasks.depends_on(more_tasks)
-    e.g. counts/clears exceptions to pause/resume the RE automatically on exception accumulation
-    e.g. can be called to pause and resume the RE as desired
-    Extends bluesky.suspenders.SuspenderBase and installs itself as a suspender on the RunEngine to allow it to pause,
-    resume and otherwise control the device programmatically by monitoring the signal of the number of exceptions.
-    Can hold a subset of all devices/beamline configuration that are required for executing Tasks, to prevent everything
-    being available in the namespace
+      e.g. An object that polls an external service for recipes, conditionally
+        constructs plans and submits them to the run engine.
+      e.g. holds a timer for when the robot arm needs to be chilled and constructs the
+        next plan to be run with that graph
+      e.g. counts/clears exceptions to pause/resume the RE automatically on exception
+        accumulation
+      e.g. can be called to pause and resume the RE as desired
+    Extends bluesky.suspenders.SuspenderBase and installs itself as a suspender on
+    the  RunEngine to allow it to pause, resume and otherwise control the device
+    programmatically by monitoring the signal of the number of exceptions.
+    Can hold a subset of all devices/beamline configuration that are required for
+    executing Tasks, to prevent everything being available in the namespace
     """
 
-    def __init__(self, run_engine: RunEngine, known_values: Dict[str, Any] = None, suspend_thresh=3, *,
-                 resume_thresh=None, **kwargs):
-        super().__init__(Signal(name="Decision Engine Exceptions"), suspend_thresh, resume_thresh=resume_thresh,
-                         **kwargs)
+    def __init__(self, run_engine: RunEngine, known_values: Dict[str, Any] = None,
+                 suspend_thresh=3, *, resume_thresh=None, **kwargs):
+        super().__init__(Signal(name="Decision Engine Exceptions"), suspend_thresh,
+                         resume_thresh=resume_thresh, **kwargs)
         self._run_engine = run_engine
         self._known_values = known_values or {}
         self._run_engine.install_suspender(self)
@@ -86,7 +90,8 @@ class DecisionEngineControlObject(SuspendCeil):
             if self._should_stop_at_end_of_next_run:
                 self._run_engine.request_pause(False)
             else:
-                self._run_engine(self.decision_engine_plan(self._create_next_graph(), self._known_values))
+                self._run_engine(self.decision_engine_plan(
+                    self._create_next_graph(), self._known_values))
 
     # TODO: neaten up comment
     def _create_next_graph(self, overrides: Dict[str, Any] = None) -> TaskGraph:
@@ -108,8 +113,10 @@ class DecisionEngineControlObject(SuspendCeil):
         """
         ...
 
-    def decision_engine_plan(self, task_graph: TaskGraph, variables: Variables = None) -> PlanOutput:
-        yield from decision_engine_plan(task_graph, variables or self._known_values, self.handle_exception)
+    def decision_engine_plan(self, task_graph: TaskGraph, variables: Variables = None) \
+            -> PlanOutput:
+        yield from decision_engine_plan(
+            task_graph, variables or self._known_values, self.handle_exception)
 
     # TODO: Move the run engine loop to another thread so this can be called whenever
     def _pause_run_engine(self, defer=False) -> None:
@@ -133,9 +140,11 @@ class DecisionEngineControlObject(SuspendCeil):
 
     def remove_value(self, obj: Any):
         if obj in self._known_values.values():
-            self._known_values = {key: value for key, value in self._known_values.items() if value != obj}
+            self._known_values = {key: value for key, value in
+                                  self._known_values.items() if value != obj}
         else:
-            self._known_values = {key: value for key, value in self._known_values.items() if key != obj}
+            self._known_values = {key: value for key, value in
+                                  self._known_values.items() if key != obj}
 
     def __getitem__(self, item):
         return self._known_values[item]
@@ -146,17 +155,20 @@ class DecisionEngineControlObject(SuspendCeil):
 
 # TODO: Allow DE to be paused after current task?
 # TODO: Can we make Readable to output state of all devices at various points?
-# RE already allows us to pause after the current instruction, and we can have checkpoints at tasks as required for
-#   rewinding... but this is the VMXi behaviour and we may want to expose here also
-# TODO: Validate TaskGraph + variables? TaskGraph inputs must either be outputs or variables
+# RE already allows us to pause after the current instruction, and we can have
+# checkpoints at tasks as required for rewinding... but this is the VMXi behaviour
+# and we may want to expose here also
 class DecisionEngine:
     """
-    The DecisionEngine holds a TaskGraph and map of values gathered from other sources, which may be overridden by
-    outputs of tasks. Providing arguments to the Tasks in the TaskGraph as required from this map
+    The DecisionEngine holds a TaskGraph and map of values gathered from other sources,
+    which may be overridden by outputs of tasks.
+    Arguments are provided to the Tasks as required from this map, and therefore
+    dependencies should not only consider hardware constraints but output/input pairs
     """
 
     def __init__(self, task_graph: TaskGraph, variables: Variables,
-                 exception_tracking_callback: Optional[Callable[[str, Optional[Exception]], None]]):
+                 exception_tracking_callback: Optional[
+                     Callable[[str, Optional[Exception]], None]]):
         self._task_graph = task_graph
         self._variables = dict(variables)
         self.validate()
@@ -169,15 +181,17 @@ class DecisionEngine:
             task.add_complete_callback(self.finish_task)
 
     """
-    Callback function to be passed to a Task for it to report back to the DecisionEngine when it is complete, rather
-    than requiring the DecisionEngine to check its state.
+    Callback function to be passed to a Task for it to report back to the 
+    DecisionEngine when it is complete, rather than requiring the DecisionEngine to 
+    check its state.
     """
 
     def finish_task(self, status: TaskStatus) -> None:
         task = status.obj
         if status.success:
             # Ensure we add any outputs before letting tasks that depend on this begin
-            self._variables.update(task.get_results(self._task_graph.outputs.get(task, [])))
+            self._variables.update(
+                task.get_results(self._task_graph.outputs.get(task, [])))
             self._completed_tasks.add(task)
             # TODO: Exception when tasks finish too quickly
             self._exception_tracking_callback(task.name, None)
@@ -197,25 +211,29 @@ class DecisionEngine:
     def give_valid_tasks(self) -> Iterator[Tuple[BlueskyTask, List[Any]]]:
         # TODO: iter?
         # Start any pending task that has its dependencies fulfilled
-        tasks = [t for t in self._task_graph.graph.keys() if not (t.started() or t in self.started_tasks)
+        tasks = [t for t in self._task_graph.graph.keys()
+                 if not (t.started() or t in self.started_tasks)
                  and self._task_graph.graph[t].issubset(self._completed_tasks)]
-        task_inputs = [[self._variables.get(a, None) for a in self._task_graph.inputs.get(t, [])] for t in tasks]
+        task_inputs = [[self._variables.get(a, None) for a in
+                        self._task_graph.inputs.get(t, [])] for t in tasks]
 
         return zip(tasks, task_inputs)
 
     # TODO: Improve, handle case of outputs that are only available after input
     # TODO: Optional args
     def validate(self) -> None:
-        known_values = [value for _, values in self._task_graph.outputs.items() for value in values] \
-                       + list(self._variables.keys())
-        needed_values = [value for _, values in self._task_graph.inputs.items() for value in values]
+        known_values = [value for _, values in self._task_graph.outputs.items()
+                        for value in values] + list(self._variables.keys())
+        needed_values = [value for _, values in self._task_graph.inputs.items()
+                         for value in values]
         unknown_values = [value for value in needed_values if value not in known_values]
         if unknown_values:
             raise Exception(f"Unknown values! {unknown_values}")
 
 
 def decision_engine_plan(task_graph: TaskGraph, variables: Variables = None,
-                         exception_handling: Optional[Callable[[str, Exception], None]] = None) -> PlanOutput:
+                         exception_handling: Optional[Callable[[str, Exception], None]]
+                         = None) -> PlanOutput:
     if not variables:
         variables = {}
     decision_engine = DecisionEngine(task_graph, variables, exception_handling)
