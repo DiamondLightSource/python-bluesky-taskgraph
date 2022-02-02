@@ -12,7 +12,7 @@ from src.bluesky_taskgraph_runner.core.decision_engine import \
 from src.bluesky_taskgraph_runner.core.task import TaskStop, TaskFail
 from src.bluesky_taskgraph_runner.core.task_graph import TaskGraph
 from src.bluesky_taskgraph_runner.tasks.stub_tasks import SetTask
-from tests.util.mocks import mock_device
+from mocks import mock_device
 
 
 class FailingDevice(SynAxis):

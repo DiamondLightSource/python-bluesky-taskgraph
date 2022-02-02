@@ -5,7 +5,7 @@ from bluesky import RunEngine
 
 from src.bluesky_taskgraph_runner.core.decision_engine import decision_engine_plan
 from src.bluesky_taskgraph_runner.core.task_graph import TaskGraph
-from tests.util.mocks import mock_task
+from mocks import mock_task
 
 
 def test_taskgraph_passes_args():

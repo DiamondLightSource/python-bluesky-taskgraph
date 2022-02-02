@@ -12,7 +12,7 @@ from src.bluesky_taskgraph_runner.core.decision_engine import decision_engine_pl
 from src.bluesky_taskgraph_runner.core.task_graph import TaskGraph
 from src.bluesky_taskgraph_runner.core.types import PlanOutput
 from src.bluesky_taskgraph_runner.tasks.stub_tasks import SetTask
-from tests.util.mocks import mock_task
+from mocks import mock_task
 
 '''
 Suggested method of composing tasks:
