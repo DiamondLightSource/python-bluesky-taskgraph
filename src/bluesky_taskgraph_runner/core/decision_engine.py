@@ -1,8 +1,7 @@
 import logging
 from typing import Tuple, Iterator, List, Any, Optional, Callable, Dict
 
-from bluesky import RunEngine, Msg
-from bluesky.run_engine import default_scan_id_source
+from bluesky import RunEngine
 from bluesky.suspenders import SuspendCeil
 from ophyd import Signal
 
@@ -14,33 +13,6 @@ logger = logging.getLogger("task")
 
 
 # TODO: More informative logging name?
-
-
-class DecisionEngineRunEngine(RunEngine):
-    """
-    An extension to the RunEngine to allow the TaskCallback function which maps the Status of a group (e.g. a long
-    running move) to the task that created it
-    """
-
-    def __init__(self, md=None, *, loop=None, preprocessors=None, context_managers=None, md_validator=None,
-                 scan_id_source=default_scan_id_source, during_task=None):
-        super().__init__(md, loop=loop, preprocessors=preprocessors, context_managers=context_managers,
-                         md_validator=md_validator, scan_id_source=scan_id_source, during_task=during_task)
-        self.register_command("TaskCallback", self._task_callback)
-
-    async def _task_callback(self, msg: Msg) -> None:
-        task = msg.obj
-        statuses = list(self._status_objs.get(msg.kwargs["group"]))
-        # TODO: What if we expect a callback but don't get one?
-        if statuses:
-            and_status = statuses[0]
-            for _ in range(1, len(statuses)):
-                and_status &= statuses[_]
-            # It is the responsibility of the status of the Task to know what this callback does, e.g. collects
-            #  multiple statuses
-            and_status.add_callback(task.propagate_status)
-
-
 # TODO: Understand what this needs to do and how to do it
 # TODO: Possibility of multiple ControlObjects, should ones exceptions stop another?
 # TODO: Allow disconnection/passing of control

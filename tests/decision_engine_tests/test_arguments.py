@@ -1,7 +1,9 @@
 from typing import List
 from unittest.mock import Mock, call
 
-from src.bluesky_taskgraph_runner.core.decision_engine import decision_engine_plan, DecisionEngineRunEngine
+from bluesky import RunEngine
+
+from src.bluesky_taskgraph_runner.core.decision_engine import decision_engine_plan
 from src.bluesky_taskgraph_runner.core.task_graph import TaskGraph
 from tests.util.mocks import mock_task
 
@@ -30,7 +32,7 @@ def test_taskgraph_passes_args():
         call.second_task.execute(["passed"]),
         call.second_task.get_results([])
     ]
-    re = DecisionEngineRunEngine({})
+    re = RunEngine({})
 
     re(decision_engine_plan(tasks, {"output": "expected output", "input": "expected input"}))
 
@@ -65,7 +67,7 @@ def test_taskgraph_updates_args():
         call.second_task.execute(["updated arg"]),
         call.second_task.get_results([])
     ]
-    re = DecisionEngineRunEngine({})
+    re = RunEngine({})
 
     re(decision_engine_plan(tasks, {"input": "initial arg"}))
 

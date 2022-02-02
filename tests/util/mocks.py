@@ -1,7 +1,6 @@
 from datetime import time
 from unittest.mock import Mock
 
-from bluesky import Msg
 from ophyd import Device
 from ophyd.sim import SynAxis
 
@@ -15,7 +14,7 @@ def mock_task(wrapped_task: BlueskyTask = None, name: str = "Mock task") -> Blue
 
     def _run_task(args=None):
         task._status.set_finished()
-        yield Msg('null')
+        yield from ()
 
     def started():
         return task._status is not None and isinstance(task._status, TaskStatus)
@@ -28,6 +27,7 @@ def mock_task(wrapped_task: BlueskyTask = None, name: str = "Mock task") -> Blue
         wrapped_task._status = task._status
         task._logger.info(msg=f"Task {task.name} started at {time()}, with args: {args}")
         yield from task._run_task(*args)
+        return wrapped_task._status
 
     task.execute.side_effect = execute
     task._run_task.side_effect = _run_task

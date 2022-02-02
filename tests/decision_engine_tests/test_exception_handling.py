@@ -1,13 +1,13 @@
 from typing import Dict, Any
 from unittest.mock import call
 
-from bluesky import FailedStatus, RunEngine
+from bluesky import RunEngine
 from bluesky.suspenders import SuspendCeil
 from ophyd import DeviceStatus, Signal
 from ophyd.sim import SynAxis
 from ophyd.utils import DestroyedError
 
-from src.bluesky_taskgraph_runner.core.decision_engine import DecisionEngineControlObject, DecisionEngineRunEngine
+from src.bluesky_taskgraph_runner.core.decision_engine import DecisionEngineControlObject
 from src.bluesky_taskgraph_runner.core.task import TaskStop, TaskFail
 from src.bluesky_taskgraph_runner.core.task_graph import TaskGraph
 from src.bluesky_taskgraph_runner.tasks.stub_tasks import SetTask
@@ -63,7 +63,7 @@ class RecoveringFromNonFatalExceptionSetTask(SetTask):
 
 # TODO: Breaks after one
 # def test_same_non_fatal_error_n_times_breaks_from_loop():
-#     re = DecisionEngineRunEngine({})
+#     re = RunEngine({})
 #     broken_device = mock_device(FailingDevice("Sticky motor", fatal_exception=False))
 #     working_device = mock_device(name="Counting device")
 #     control = FailingDecisionEngineControlObject(re, known_values={"first_device": working_device,
@@ -83,7 +83,7 @@ class RecoveringFromNonFatalExceptionSetTask(SetTask):
 
 # TODO: Flaky
 # def test_fatal_error_breaks_from_loop():
-#     re = DecisionEngineRunEngine({})
+#     re = RunEngine({})
 #     broken_device = mock_device(FailingDevice("Sticky motor", fatal_exception=True))
 #     working_device = mock_device(name="Counting device")
 #     control = FailingDecisionEngineControlObject(re, known_values={"first_device": working_device,
@@ -101,7 +101,7 @@ class RecoveringFromNonFatalExceptionSetTask(SetTask):
 
 
 def test_no_exception_to_completion():
-    re = DecisionEngineRunEngine({})
+    re = RunEngine({})
     first_device = mock_device(name="First device")
     second_device = mock_device(name="Second device")
     third_device = mock_device(name="Third device")

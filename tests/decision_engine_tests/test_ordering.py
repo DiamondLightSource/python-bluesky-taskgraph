@@ -2,11 +2,13 @@ from time import sleep
 from typing import Any, Optional
 from unittest.mock import Mock, call
 
+from bluesky import RunEngine
 from bluesky.plan_stubs import abs_set
+from bluesky.protocols import Status
 from ophyd import Device
 from ophyd.sim import SynAxis
 
-from src.bluesky_taskgraph_runner.core.decision_engine import DecisionEngineRunEngine, decision_engine_plan
+from src.bluesky_taskgraph_runner.core.decision_engine import decision_engine_plan
 from src.bluesky_taskgraph_runner.core.task_graph import TaskGraph
 from src.bluesky_taskgraph_runner.core.types import PlanOutput
 from src.bluesky_taskgraph_runner.tasks.stub_tasks import SetTask
@@ -47,7 +49,7 @@ def test_order_of_tasks():
         call.third_task.execute([]),
         call.third_task.get_results([])
     ]
-    re = DecisionEngineRunEngine({})
+    re = RunEngine({})
 
     re(decision_engine_plan(tasks))
 
@@ -86,7 +88,7 @@ def test_graph_dependencies_depends():
         call.third_task.execute([]),
         call.third_task.get_results([])
     ]
-    re = DecisionEngineRunEngine({})
+    re = RunEngine({})
 
     re(decision_engine_plan(tasks))
 
@@ -121,7 +123,7 @@ def test_graph_dependencies_dependant():
         call.third_task.execute([]),
         call.third_task.get_results([])
     ]
-    re = DecisionEngineRunEngine({})
+    re = RunEngine({})
 
     re(decision_engine_plan(tasks))
 
@@ -144,14 +146,16 @@ def test_graph_runs_tasks_concurrent():
     location = 7
 
     def slow_move(device: Device, value: Any, group: Optional[str] = None) -> PlanOutput:
-        yield from abs_set(device, value, group=group or slow_task.name())
+        ret: Optional[Status] = yield from abs_set(device, value, group=group or slow_task.name())
         # The wait is a success if the set was a success
-        yield from slow_task._track_device_status(group)
+        ret.add_callback(slow_task.propagate_status)
+        return slow_task._status
 
     def fast_move(device: Device, value: Any, group: Optional[str] = None) -> PlanOutput:
-        yield from abs_set(device, value, group=group or fast_task.name())
+        ret: Optional[Status] = yield from abs_set(device, value, group=group or fast_task.name())
         # The wait is a success if the set was a success
-        yield from fast_task._track_device_status(group)
+        ret.add_callback(fast_task.propagate_status)
+        return fast_task._status
 
     # Run the actual set behaviour, which sets a status to done only once the move is complete
     slow_task._run_task.side_effect = slow_move
@@ -177,7 +181,7 @@ def test_graph_runs_tasks_concurrent():
         call.after_slow.execute([]),
         call.after_slow.get_results([])
     ]
-    re = DecisionEngineRunEngine({})
+    re = RunEngine({})
 
     re(decision_engine_plan(tasks, {"slow device": slow_device, "fast device": fast_device, "location": location}))
 

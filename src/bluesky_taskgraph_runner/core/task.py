@@ -2,8 +2,7 @@ import logging
 from time import time
 from typing import Callable, Any, Dict, List, Optional, Set
 
-from bluesky import Msg
-from ophyd.status import Status, StatusBase
+from ophyd.status import Status
 
 from src.bluesky_taskgraph_runner.core.types import PlanArgs, PlanOutput
 
@@ -85,11 +84,11 @@ class BlueskyTask:
     """
     Propagate the status of another Status into the Status of this Task.
     e.g. is a Task causes a long running movement, its Status should not be considered complete until the movement
-    is complete. Tasks that do so should therefore emit a 'TaskCallback' Msg.
-    More complex Tasks tracking multiple movements may wish to override this method to
+    is complete. Tasks that do so should therefore propagate the completion of the Status of the long running operation
+    More complex Tasks tracking multiple movements may wish to override this method
     """
 
-    def propagate_status(self, status: StatusBase) -> None:
+    def propagate_status(self, status: Status) -> None:
         # Status is complete so shouldn't need a timeout?
         exception = status.exception(None)
         if exception:
@@ -125,6 +124,7 @@ class BlueskyTask:
         self._status = TaskStatus(self)
         self._logger.info(msg=f"Task {self.name} started at {time()}, with args: {args}")
         yield from self._run_task(*args)
+        return self._status
 
     """
     The actual commands to be executed by this task.
@@ -135,7 +135,7 @@ class BlueskyTask:
     def _run_task(self, *args: PlanArgs) -> PlanOutput:
         self._logger.info(msg=f"Task {self.name} finished at {time()}")
         self._status.set_finished()
-        yield Msg('null')
+        yield from ()
 
     def add_result(self, result: Any) -> None:
         self._results.append(result)

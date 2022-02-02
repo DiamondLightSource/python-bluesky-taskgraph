@@ -1,12 +1,11 @@
-from typing import List, Callable, Iterable
+from typing import List, Optional
 
-from bluesky import Msg
 from bluesky.plan_stubs import create, read, save
-from ophyd import StatusBase, DeviceStatus, Device
+from bluesky.protocols import Status
+from ophyd import DeviceStatus, Device
 
 from src.bluesky_taskgraph_runner.core.task import BlueskyTask
-from src.bluesky_taskgraph_runner.core.types import PlanOutput, KwArgs
-from src.bluesky_taskgraph_runner.plans.util_plans import task_callback
+from src.bluesky_taskgraph_runner.core.types import PlanOutput, KwArgs, PlanCallable
 from src.bluesky_taskgraph_runner.tasks.behavioural_tasks import read_device
 
 
@@ -15,10 +14,7 @@ class DeviceCallbackTask(BlueskyTask):
     Utility Task to define a task that waits for a Device to finish moving before considering itself complete
     """
 
-    def _track_device_status(self, group: str) -> PlanOutput:
-        yield from task_callback(self, group)
-
-    def propagate_status(self, status: StatusBase):
+    def propagate_status(self, status: Status):
         super().propagate_status(status)
         if isinstance(status, DeviceStatus):
             # status.device is Movable, so must be Readable
@@ -66,12 +62,15 @@ class PlanTask(BlueskyTask):
     any unknown method args.
     """
 
-    def __init__(self, name: str, plan: Callable[..., Iterable[Msg]]):
+    def __init__(self, name: str, plan: PlanCallable):
         super().__init__(name)
         self._plan = plan
 
     def _run_task(self, kwargs: KwArgs = None) -> PlanOutput:
         if kwargs is None:
             kwargs = {}
-        yield from self._plan(*kwargs.pop("args", []), **kwargs)
-        yield from BlueskyTask._run_task(self)
+        ret: Optional[Status] = yield from self._plan(*kwargs.pop("args", []), **kwargs)
+        if ret:
+            ret.add_callback(self.propagate_status)
+        else:
+            yield from BlueskyTask._run_task(self)
