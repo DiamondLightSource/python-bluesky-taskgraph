@@ -1,6 +1,7 @@
 from ophyd import Device
+from ophyd.status import Status
 
-from python_bluesky_taskgraph.core.task import BlueskyTask, TaskStatus
+from python_bluesky_taskgraph.core.task import BlueskyTask
 from python_bluesky_taskgraph.core.types import PlanArgs, PlanOutput
 
 
@@ -35,8 +36,11 @@ class ConditionalTask(BlueskyTask):
     def _check_condition(self, condition_check_args: PlanArgs) -> bool:
         ...
 
-    def propagate_status(self, status: TaskStatus) -> None:
-        self._overwrite_results(status.obj.results)
+    def propagate_status(self, status: Status) -> None:
+        if isinstance(status.obj, BlueskyTask):
+            self._overwrite_results(status.obj._results)
+        else:
+            self.add_result(status.obj)
         super().propagate_status(status)
 
     def _run_task(self, *args: PlanArgs) -> PlanOutput:

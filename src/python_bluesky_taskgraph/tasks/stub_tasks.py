@@ -67,8 +67,8 @@ class CloseRunTask(BlueskyTask):
     def __init__(self):
         super().__init__("Close Run Task")
 
-    def _run_task(self, exit_status: Optional[str] = None, reason: Optional[str] =
-    None) -> PlanOutput:
+    def _run_task(self, exit_status: Optional[str] = None,
+                  reason: Optional[str] = None) -> PlanOutput:
         run_id = yield from close_run(exit_status, reason)
         self.add_result(run_id)
         yield from BlueskyTask._run_task(self)
@@ -137,7 +137,7 @@ class SetTask(DeviceCallbackTask):
             -> PlanOutput:
         self.add_result(read_device(device))
         ret: Optional[Status] = yield from abs_set(device, value,
-                                                   group=group or self.name())
+                                                   group=group or self.name)
         if ret:
             ret.add_callback(self.propagate_status)
         else:
@@ -149,7 +149,7 @@ class SetDeviceTask(DeviceTask):
     def _run_task(self, value: Any, group: Optional[str] = None) -> PlanOutput:
         self.add_result(read_device(self._device))
         ret: Optional[Status] = yield from abs_set(self._device, value,
-                                                   group=group or self.name())
+                                                   group=group or self.name)
         if ret:
             ret.add_callback(self.propagate_status)
         else:
@@ -164,7 +164,7 @@ class SetKnownValueDeviceTask(DeviceTask):
     def _run_task(self, group: Optional[str]) -> PlanOutput:
         self.add_result(read_device(self._device))
         ret: Optional[Status] = yield from abs_set(self._device, self._value,
-                                                   group=group or self.name())
+                                                   group=group or self.name)
         if ret:
             ret.add_callback(self.propagate_status)
         else:

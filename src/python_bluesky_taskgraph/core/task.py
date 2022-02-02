@@ -1,26 +1,10 @@
 import logging
 from time import time
-from typing import Any, Callable, Dict, List, Optional, Set
+from typing import Any, Callable, Dict, List, Optional
 
 from ophyd.status import Status
 
 from python_bluesky_taskgraph.core.types import PlanArgs, PlanOutput
-
-
-class TaskStatus(Status):
-    """
-    Status of a task, automatically adds any callbacks set on the task, and holds the
-    Task as its object: to allow the status of the task to automatically call back to
-    the DecisionEngine that holds its task, regardless of when the Status[es] it is
-    tracking are instantiated
-    """
-
-    def __init__(self, task: 'BlueskyTask', timeout=None, settle_time=0, done=None,
-                 success=None):
-        super().__init__(obj=task, timeout=timeout, settle_time=settle_time, done=done,
-                         success=success)
-        for callback in task.callbacks():
-            self.add_callback(callback)
 
 
 class DecisionEngineKnownException(Exception):
@@ -67,8 +51,7 @@ class BlueskyTask:
         # TODO: Do we want logging at the Task, DecisionEngine or ControlObject level?
         self._logger = logging.getLogger("BlueskyTask")
         self._results: List[Any] = []
-        self._status: Optional[TaskStatus] = None
-        self._callbacks: Set[Callable[[TaskStatus], None]] = set()
+        self._status: Status = Status(obj=self)
 
     def __str__(self) -> str:
         if self.complete:
@@ -84,11 +67,8 @@ class BlueskyTask:
     of tasks that have completed
     """
 
-    def add_complete_callback(self, callback: Callable[[TaskStatus], None]) -> None:
-        if self._status:
-            self._status.add_callback(callback)
-        else:
-            self._callbacks.add(callback)
+    def add_complete_callback(self, callback: Callable[[Status], None]) -> None:
+        self._status.add_callback(callback)
 
     """
     Propagate the status of another Status into the Status of this Task.
@@ -108,23 +88,21 @@ class BlueskyTask:
             self._status.set_finished()
 
     def _fail(self, exc: Optional[Exception] = None):
-        if self._status is None:
-            self._status = TaskStatus(self)
         if exc is None:
             exc = TaskStop()
         self._status.set_exception(exc)
 
+    @property
     def name(self) -> str:
         return self._name
 
+    @property
     def started(self) -> bool:
         return self._status is not None
 
+    @property
     def complete(self) -> bool:
-        return self.started() and self._status.done
-
-    def callbacks(self) -> Set[Callable[[TaskStatus], None]]:
-        return self._callbacks
+        return self.started and self._status.done
 
     """
     To track the status of the task for the decision engine, we must create a
@@ -135,9 +113,8 @@ class BlueskyTask:
     """
 
     def execute(self, args: PlanArgs) -> PlanOutput:
-        self._status = TaskStatus(self)
-        self._logger.info(
-            msg=f"Task {self.name} started at {time()}, with args: {args}")
+        self._logger.info(msg=f"Task {self.name} started at "
+                              f"{time()}, with args: {args}")
         yield from self._run_task(*args)
         return self._status
 

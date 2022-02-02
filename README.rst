@@ -28,8 +28,8 @@ A TaskGraph contains:
 
 The DecisionEnginePlan is additionally passed a dictionary of string to any necessary initial conditions or known values
 atits creation. e.g.
-   Beamline configurations, name etc.
-   Any devices that will be required for the graph
+- Beamline configurations, name etc.
+- Any devices that will be required for the graph
 
 Decision engine plans, their decision engines, the task graphs they are initialised with, and the tasks are intended to
 be run once and then discarded.

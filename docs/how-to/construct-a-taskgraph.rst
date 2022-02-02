@@ -1,5 +1,5 @@
 How to construct a TaskGraph
-========================
+============================
 
 A TaskGraph contains a trio of mappings: from each task to every task it directly depends upon, or cannot be run
 concurrently with, from each task to the names of all the inputs it requires for execution and from each task to the

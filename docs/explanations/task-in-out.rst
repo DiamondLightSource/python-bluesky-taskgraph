@@ -1,5 +1,5 @@
 Why are Task in/out names defined by the TaskGraph?
-==============================
+===================================================
 
 Task input and output names are defined by the TaskGraph they are in to allow task definitions to be reused between
 multiple taskgraphs without any forethought about where their inputs/outputs are being routed.

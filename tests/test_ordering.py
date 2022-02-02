@@ -24,8 +24,8 @@ first_tasks = get_first_tasks()
 
 tasks = final_tasks.depends_on(penultimate_tasks).[...]
     .depends_on(second_tasks).depends_on(first_tasks)
-or 
-tasks = first_tasks.are_dependent_on(second_tasks)...
+  or
+    tasks = first_tasks.are_dependent_on(second_tasks)...
 
 '''
 
@@ -151,7 +151,7 @@ def test_graph_runs_tasks_concurrent():
     def slow_move(device: Device, value: Any,
                   group: Optional[str] = None) -> PlanOutput:
         ret: Optional[Status] = yield from abs_set(device, value,
-                                                   group=group or slow_task.name())
+                                                   group=group or slow_task.name)
         # The wait is a success if the set was a success
         ret.add_callback(slow_task.propagate_status)
         return slow_task._status
@@ -159,7 +159,7 @@ def test_graph_runs_tasks_concurrent():
     def fast_move(device: Device, value: Any,
                   group: Optional[str] = None) -> PlanOutput:
         ret: Optional[Status] = yield from abs_set(device, value,
-                                                   group=group or fast_task.name())
+                                                   group=group or fast_task.name)
         # The wait is a success if the set was a success
         ret.add_callback(fast_task.propagate_status)
         return fast_task._status

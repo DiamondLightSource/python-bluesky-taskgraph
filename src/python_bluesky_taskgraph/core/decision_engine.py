@@ -4,12 +4,12 @@ from typing import Any, Callable, Dict, Iterator, List, Optional, Tuple
 from bluesky import RunEngine
 from bluesky.suspenders import SuspendCeil
 from ophyd import Signal
+from ophyd.status import Status
 
 from python_bluesky_taskgraph.core.task import (
     BlueskyTask,
     DecisionEngineKnownException,
     TaskFail,
-    TaskStatus,
 )
 from python_bluesky_taskgraph.core.task_graph import TaskGraph
 from python_bluesky_taskgraph.core.types import PlanOutput, Variables
@@ -190,7 +190,7 @@ class DecisionEngine:
     check its state.
     """
 
-    def finish_task(self, status: TaskStatus) -> None:
+    def finish_task(self, status: Status) -> None:
         task = status.obj
         if status.success:
             # Ensure we add any outputs before letting tasks that depend on this begin

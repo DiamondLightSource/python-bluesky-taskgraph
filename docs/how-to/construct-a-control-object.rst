@@ -1,5 +1,5 @@
 Constructing a ControlObject
-========================
+============================
 
 A ControlObject [name TBD] is an object that encompasses whatever is required to allow automatic scheduling of
 TaskGraphs and handling of exceptions. It holds the RunEngine that will process the plans and installs itself as a

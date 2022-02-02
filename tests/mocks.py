@@ -1,39 +1,16 @@
-from datetime import time
 from unittest.mock import Mock
 
 from ophyd import Device
 from ophyd.sim import SynAxis
 
-from python_bluesky_taskgraph.core.task import BlueskyTask, TaskStatus
-from python_bluesky_taskgraph.core.types import PlanArgs, PlanOutput
+from python_bluesky_taskgraph.core.task import BlueskyTask
 
 
 def mock_task(wrapped_task: BlueskyTask = None, name: str = "Mock task") -> BlueskyTask:
     wrapped_task = wrapped_task or BlueskyTask(name=name)
     task = Mock(wraps=wrapped_task)
+    task._status = wrapped_task._status
 
-    def _run_task(args=None):
-        task._status.set_finished()
-        yield from ()
-
-    def started():
-        return task._status is not None and isinstance(task._status, TaskStatus)
-
-    def complete():
-        return started() and task._status.done
-
-    def execute(args: PlanArgs) -> PlanOutput:
-        task._status = TaskStatus(task=task)
-        wrapped_task._status = task._status
-        task._logger.info(
-            msg=f"Task {task.name} started at {time()}, with args: {args}")
-        yield from task._run_task(*args)
-        return wrapped_task._status
-
-    task.execute.side_effect = execute
-    task._run_task.side_effect = _run_task
-    task.started.side_effect = started
-    task.complete.side_effect = complete
     return task
 
 

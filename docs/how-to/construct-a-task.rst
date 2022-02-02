@@ -1,5 +1,5 @@
 How to construct a Task
-========================
+=======================
 
 A Task should extend BlueskyTask and overwrite BlueskyTask._run_task, unless finer control over the Status of the task
 is required, in which case BlueskyTask.execute may be overwritten instead. The Status of the task- constructed by
