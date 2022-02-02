@@ -44,9 +44,9 @@ another graph other than these transient cases.
 
 ============== ==============================================================
 PyPI           ``pip install bluesky_taskgraph_runner``
-Source code    https://github.com/DiamondLightSource/bluesky_taskgraph_runner
+Source code    https://github.com/DiamondLightSource/python-bluesky-taskgraph
 Documentation  https://DiamondLightSource.github.io/bluesky_taskgraph_runner
-Releases       https://github.com/DiamondLightSource/bluesky_taskgraph_runner/releases
+Releases       https://github.com/DiamondLightSource/python-bluesky-taskgraph/releases
 ============== ==============================================================
 
 .. code:: python
@@ -60,12 +60,12 @@ Releases       https://github.com/DiamondLightSource/bluesky_taskgraph_runner/re
     #CO.run_task_graphs()
 
 
-.. |code_ci| image:: https://github.com/DiamondLightSource/bluesky_taskgraph_runner/workflows/Code%20CI/badge.svg?branch=master
-    :target: https://github.com/DiamondLightSource/bluesky_taskgraph_runner/actions?query=workflow%3A%22Code+CI%22
+.. |code_ci| image:: https://github.com/DiamondLightSource/python-bluesky-taskgraph/workflows/Code%20CI/badge.svg?branch=master
+    :target: https://github.com/DiamondLightSource/python-bluesky-taskgraph/actions?query=workflow%3A%22Code+CI%22
     :alt: Code CI
 
-.. |docs_ci| image:: https://github.com/DiamondLightSource/bluesky_taskgraph_runner/workflows/Docs%20CI/badge.svg?branch=master
-    :target: https://github.com/DiamondLightSource/bluesky_taskgraph_runner/actions?query=workflow%3A%22Docs+CI%22
+.. |docs_ci| image:: https://github.com/DiamondLightSource/python-bluesky-taskgraph/workflows/Docs%20CI/badge.svg?branch=master
+    :target: https://github.com/DiamondLightSource/python-bluesky-taskgraph/actions?query=workflow%3A%22Docs+CI%22
     :alt: Docs CI
 
 .. |coverage| image:: https://codecov.io/gh/DiamondLightSource/bluesky_taskgraph_runner/branch/master/graph/badge.svg
