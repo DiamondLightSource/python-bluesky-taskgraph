@@ -35,15 +35,15 @@ Installing the library
 
 You can now use ``pip`` to install the library::
 
-    python3 -m pip install bluesky_taskgraph_runner
+    python3 -m pip install python_bluesky_taskgraph
 
 If you require a feature that is not currently released you can also install
 from github::
 
-    python3 -m pip install git+git://github.com/DiamondLightSource/bluesky_taskgraph_runner.git
+    python3 -m pip install git+git://github.com/DiamondLightSource/python_bluesky_taskgraph.git
 
 The library should now be installed and the commandline interface on your path.
 You can check the version that has been installed by typing::
 
-    bluesky_taskgraph_runner --version
+    python_bluesky_taskgraph --version
 

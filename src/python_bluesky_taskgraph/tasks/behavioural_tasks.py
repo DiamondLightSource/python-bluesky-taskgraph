@@ -1,7 +1,7 @@
 from ophyd import Device
 
-from src.bluesky_taskgraph_runner.core.task import BlueskyTask, TaskStatus
-from src.bluesky_taskgraph_runner.core.types import PlanArgs, PlanOutput
+from python_bluesky_taskgraph.core.task import BlueskyTask, TaskStatus
+from python_bluesky_taskgraph.core.types import PlanArgs, PlanOutput
 
 
 def read_device(device: Device):

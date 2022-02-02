@@ -4,10 +4,10 @@ url = "https://pypi.org/simple"
 verify_ssl = true
 
 [dev-packages]
-bluesky_taskgraph_runner = {editable = true, extras = ["dev"], path = "."}
+python_bluesky_taskgraph = {editable = true, extras = ["dev"], path = "."}
 
 [packages]
-bluesky_taskgraph_runner = {editable = true, path = "."}
+python_bluesky_taskgraph = {editable = true, path = "."}
 
 [scripts]
 lint = "pre-commit run --all-files --show-diff-on-failure --color=always -v"

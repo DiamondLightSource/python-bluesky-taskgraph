@@ -5,10 +5,10 @@ from bluesky.plan_stubs import sleep, wait, abs_set, stage, create, read, save, 
 from bluesky.protocols import Status
 from ophyd import Device
 
-from src.bluesky_taskgraph_runner.core.task import BlueskyTask
-from src.bluesky_taskgraph_runner.core.types import PlanOutput, KwArgs
-from src.bluesky_taskgraph_runner.tasks.behavioural_tasks import read_device
-from src.bluesky_taskgraph_runner.tasks.functional_tasks import DeviceCallbackTask, \
+from python_bluesky_taskgraph.core.task import BlueskyTask
+from python_bluesky_taskgraph.core.types import PlanOutput, KwArgs
+from python_bluesky_taskgraph.tasks.behavioural_tasks import read_device
+from python_bluesky_taskgraph.tasks.functional_tasks import DeviceCallbackTask, \
     DeviceTask
 
 

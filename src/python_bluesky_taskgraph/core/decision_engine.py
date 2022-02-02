@@ -5,10 +5,10 @@ from bluesky import RunEngine
 from bluesky.suspenders import SuspendCeil
 from ophyd import Signal
 
-from src.bluesky_taskgraph_runner.core.task import DecisionEngineKnownException, \
-    TaskFail, TaskStatus, BlueskyTask
-from src.bluesky_taskgraph_runner.core.task_graph import TaskGraph
-from src.bluesky_taskgraph_runner.core.types import Variables, PlanOutput
+from python_bluesky_taskgraph.core.task import DecisionEngineKnownException, TaskFail, \
+    TaskStatus, BlueskyTask
+from python_bluesky_taskgraph.core.task_graph import TaskGraph
+from python_bluesky_taskgraph.core.types import Variables, PlanOutput
 
 logger = logging.getLogger("task")
 

@@ -4,8 +4,8 @@ from unittest.mock import Mock
 from ophyd import Device
 from ophyd.sim import SynAxis
 
-from src.bluesky_taskgraph_runner.core.task import TaskStatus, BlueskyTask
-from src.bluesky_taskgraph_runner.core.types import PlanArgs, PlanOutput
+from python_bluesky_taskgraph.core.task import TaskStatus, BlueskyTask
+from python_bluesky_taskgraph.core.types import PlanArgs, PlanOutput
 
 
 def mock_task(wrapped_task: BlueskyTask = None, name: str = "Mock task") -> BlueskyTask:

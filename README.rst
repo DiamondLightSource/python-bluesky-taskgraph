@@ -1,4 +1,4 @@
-bluesky_taskgraph_runner
+python_bluesky_taskgraph
 ===========================
 
 |code_ci| |docs_ci| |coverage| |pypi_version| |license|
@@ -43,9 +43,9 @@ another graph other than these transient cases.
 
 
 ============== ==============================================================
-PyPI           ``pip install bluesky_taskgraph_runner``
+PyPI           ``pip install python_bluesky_taskgraph``
 Source code    https://github.com/DiamondLightSource/python-bluesky-taskgraph
-Documentation  https://DiamondLightSource.github.io/bluesky_taskgraph_runner
+Documentation  https://DiamondLightSource.github.io/python_bluesky_taskgraph
 Releases       https://github.com/DiamondLightSource/python-bluesky-taskgraph/releases
 ============== ==============================================================
 
@@ -68,12 +68,12 @@ Releases       https://github.com/DiamondLightSource/python-bluesky-taskgraph/re
     :target: https://github.com/DiamondLightSource/python-bluesky-taskgraph/actions?query=workflow%3A%22Docs+CI%22
     :alt: Docs CI
 
-.. |coverage| image:: https://codecov.io/gh/DiamondLightSource/bluesky_taskgraph_runner/branch/master/graph/badge.svg
-    :target: https://codecov.io/gh/DiamondLightSource/bluesky_taskgraph_runner
+.. |coverage| image:: https://codecov.io/gh/DiamondLightSource/python_bluesky_taskgraph/branch/master/graph/badge.svg
+    :target: https://codecov.io/gh/DiamondLightSource/python_bluesky_taskgraph
     :alt: Test Coverage
 
-.. |pypi_version| image:: https://img.shields.io/pypi/v/bluesky_taskgraph_runner.svg
-    :target: https://pypi.org/project/bluesky_taskgraph_runner
+.. |pypi_version| image:: https://img.shields.io/pypi/v/python_bluesky_taskgraph.svg
+    :target: https://pypi.org/project/python_bluesky_taskgraph
     :alt: Latest PyPI version
 
 .. |license| image:: https://img.shields.io/badge/License-Apache%202.0-blue.svg
@@ -84,4 +84,4 @@ Releases       https://github.com/DiamondLightSource/python-bluesky-taskgraph/re
     Anything below this line is used when viewing README.rst and will be replaced
     when included in index.rst
 
-See https://DiamondLightSource.github.io/bluesky_taskgraph_runner for more detailed documentation.
+See https://DiamondLightSource.github.io/python_bluesky_taskgraph for more detailed documentation.

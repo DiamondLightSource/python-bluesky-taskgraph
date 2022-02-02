@@ -7,12 +7,11 @@ from ophyd import DeviceStatus, Signal
 from ophyd.sim import SynAxis
 from ophyd.utils import DestroyedError
 
-from src.bluesky_taskgraph_runner.core.decision_engine import \
-    DecisionEngineControlObject
-from src.bluesky_taskgraph_runner.core.task import TaskStop, TaskFail
-from src.bluesky_taskgraph_runner.core.task_graph import TaskGraph
-from src.bluesky_taskgraph_runner.tasks.stub_tasks import SetTask
-from tests.util.mocks import mock_device
+from python_bluesky_taskgraph.core.decision_engine import DecisionEngineControlObject
+from python_bluesky_taskgraph.core.task import TaskStop, TaskFail
+from python_bluesky_taskgraph.core.task_graph import TaskGraph
+from python_bluesky_taskgraph.tasks.stub_tasks import SetTask
+from mocks import mock_device
 
 
 class FailingDevice(SynAxis):

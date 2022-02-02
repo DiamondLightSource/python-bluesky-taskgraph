@@ -3,9 +3,9 @@ from unittest.mock import Mock, call
 
 from bluesky import RunEngine
 
-from src.bluesky_taskgraph_runner.core.decision_engine import decision_engine_plan
-from src.bluesky_taskgraph_runner.core.task_graph import TaskGraph
-from tests.util.mocks import mock_task
+from python_bluesky_taskgraph.core.decision_engine import decision_engine_plan
+from python_bluesky_taskgraph.core.task_graph import TaskGraph
+from mocks import mock_task
 
 
 def test_taskgraph_passes_args():

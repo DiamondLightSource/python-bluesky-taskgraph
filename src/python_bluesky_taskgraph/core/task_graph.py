@@ -1,4 +1,4 @@
-from src.bluesky_taskgraph_runner.core.types import Graph, Input, Output
+from python_bluesky_taskgraph.core.types import Graph, Input, Output
 
 
 def _format_task(task, dependencies, inputs, outputs):

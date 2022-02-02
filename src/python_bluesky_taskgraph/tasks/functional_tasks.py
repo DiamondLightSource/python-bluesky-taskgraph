@@ -4,9 +4,9 @@ from bluesky.plan_stubs import create, read, save
 from bluesky.protocols import Status
 from ophyd import DeviceStatus, Device
 
-from src.bluesky_taskgraph_runner.core.task import BlueskyTask
-from src.bluesky_taskgraph_runner.core.types import PlanOutput, KwArgs, PlanCallable
-from src.bluesky_taskgraph_runner.tasks.behavioural_tasks import read_device
+from python_bluesky_taskgraph.core.task import BlueskyTask
+from python_bluesky_taskgraph.core.types import PlanOutput, KwArgs, PlanCallable
+from python_bluesky_taskgraph.tasks.behavioural_tasks import read_device
 
 
 class DeviceCallbackTask(BlueskyTask):

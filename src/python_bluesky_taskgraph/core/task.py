@@ -4,7 +4,7 @@ from typing import Callable, Any, Dict, List, Optional, Set
 
 from ophyd.status import Status
 
-from src.bluesky_taskgraph_runner.core.types import PlanArgs, PlanOutput
+from python_bluesky_taskgraph.core.types import PlanArgs, PlanOutput
 
 
 class TaskStatus(Status):

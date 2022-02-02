@@ -3,7 +3,7 @@ from typing import Dict, Any, List, Optional, Generator, Callable
 from bluesky import Msg
 from bluesky.protocols import Status
 
-BlueskyTask = "src.bluesky_taskgraph_runner.core.task.BlueskyTask"
+BlueskyTask = "bluesky_taskgraph_runner.core.task.BlueskyTask"
 
 Graph = Dict[BlueskyTask, List[BlueskyTask]]
 Input = Dict[BlueskyTask, List[str]]
