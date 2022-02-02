@@ -1,17 +1,17 @@
-from typing import Dict, Any
+from typing import Any, Dict
 from unittest.mock import call
 
 from bluesky import RunEngine
 from bluesky.suspenders import SuspendCeil
+from mocks import mock_device
 from ophyd import DeviceStatus, Signal
 from ophyd.sim import SynAxis
 from ophyd.utils import DestroyedError
 
 from python_bluesky_taskgraph.core.decision_engine import DecisionEngineControlObject
-from python_bluesky_taskgraph.core.task import TaskStop, TaskFail
+from python_bluesky_taskgraph.core.task import TaskFail, TaskStop
 from python_bluesky_taskgraph.core.task_graph import TaskGraph
 from python_bluesky_taskgraph.tasks.stub_tasks import SetTask
-from mocks import mock_device
 
 
 class FailingDevice(SynAxis):

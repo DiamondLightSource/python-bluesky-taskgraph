@@ -5,6 +5,7 @@ from unittest.mock import Mock, call
 from bluesky import RunEngine
 from bluesky.plan_stubs import abs_set
 from bluesky.protocols import Status
+from mocks import mock_task
 from ophyd import Device
 from ophyd.sim import SynAxis
 
@@ -12,7 +13,6 @@ from python_bluesky_taskgraph.core.decision_engine import decision_engine_plan
 from python_bluesky_taskgraph.core.task_graph import TaskGraph
 from python_bluesky_taskgraph.core.types import PlanOutput
 from python_bluesky_taskgraph.tasks.stub_tasks import SetTask
-from mocks import mock_task
 
 '''
 Suggested method of composing tasks:

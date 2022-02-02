@@ -1,9 +1,9 @@
-from typing import Dict, Any, List, Optional, Generator, Callable
+from typing import Any, Callable, Dict, Generator, List, Optional
 
 from bluesky import Msg
 from bluesky.protocols import Status
 
-BlueskyTask = "bluesky_taskgraph_runner.core.task.BlueskyTask"
+BlueskyTask = "python_bluesky_taskgraph.core.task.BlueskyTask"
 
 Graph = Dict[BlueskyTask, List[BlueskyTask]]
 Input = Dict[BlueskyTask, List[str]]

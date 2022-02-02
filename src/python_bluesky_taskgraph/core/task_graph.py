@@ -43,7 +43,7 @@ class TaskGraph:
         return len(self.graph)
 
     """
-    Makes all tasks in this graph depend on the completion of all tasks within 
+    Makes all tasks in this graph depend on the completion of all tasks within
     another graph
     And adds the other graph to this graph.
     Returns the combined graph to allow chaining of this method
@@ -55,7 +55,7 @@ class TaskGraph:
         return self + other
 
     """
-    Makes all tasks in another graph depend on the completion of all tasks within 
+    Makes all tasks in another graph depend on the completion of all tasks within
     this graph
     And adds this graph to the other graph.
     Returns the combined graph to allow chaining of this method
