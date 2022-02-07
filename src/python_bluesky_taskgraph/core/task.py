@@ -1,10 +1,12 @@
 import logging
+from abc import abstractmethod
 from time import time
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any, Callable, Dict, Generator, Generic, List, Optional
 
+from bluesky import Msg
 from ophyd.status import Status
 
-from python_bluesky_taskgraph.core.types import PlanArgs, PlanOutput
+from python_bluesky_taskgraph.core.types import InputType
 
 
 class DecisionEngineKnownException(Exception):
@@ -12,7 +14,7 @@ class DecisionEngineKnownException(Exception):
         self._is_fatal = fatal
 
     @property
-    def is_fatal(self):
+    def is_fatal(self) -> bool:
         return self._is_fatal
 
 
@@ -28,7 +30,7 @@ class TaskFail(DecisionEngineKnownException):
         super().__init__(True)
 
 
-class BlueskyTask:
+class BlueskyTask(Generic[InputType]):
     """
     A Task to be run by Bluesky.
     Tasks are intended to be generic, but are required to have a name, which is
@@ -51,14 +53,12 @@ class BlueskyTask:
         # TODO: Do we want logging at the Task, DecisionEngine or ControlObject level?
         self._logger = logging.getLogger("BlueskyTask")
         self._results: List[Any] = []
-        self._status: Status = Status(obj=self)
+        self.status: Status = Status(obj=self)
 
     def __str__(self) -> str:
         if self.complete:
             return f"{self._name} Complete: {self._results}"
-        if self.started:
-            return f"{self._name}: Started."
-        return f"{self._name}: Not Started"
+        return f"{self._name}: Not Finished"
 
     """
     Add a callback for the status of this Task to call once the Task is complete:
@@ -68,7 +68,7 @@ class BlueskyTask:
     """
 
     def add_complete_callback(self, callback: Callable[[Status], None]) -> None:
-        self._status.add_callback(callback)
+        self.status.add_callback(callback)
 
     """
     Propagate the status of another Status into the Status of this Task.
@@ -83,26 +83,31 @@ class BlueskyTask:
         # Status is complete so shouldn't need a timeout?
         exception = status.exception(None)
         if exception:
-            self._status.set_exception(exception)
+            self.status.set_exception(exception)
         else:
-            self._status.set_finished()
+            self.status.set_finished()
 
-    def _fail(self, exc: Optional[Exception] = None):
+    def _add_callback_or_complete(self, status: Optional[Status]) \
+            -> Generator[Msg, None, None]:
+        if status:
+            status.add_callback(self.propagate_status)
+        else:
+            self._logger.info(f"Task {self.name} presumed finished at {time()}")
+            self.status.set_finished()
+        yield from ()
+
+    def _fail(self, exc: Optional[Exception] = None) -> None:
         if exc is None:
             exc = TaskStop()
-        self._status.set_exception(exc)
+        self.status.set_exception(exc)
 
     @property
     def name(self) -> str:
         return self._name
 
     @property
-    def started(self) -> bool:
-        return self._status is not None
-
-    @property
     def complete(self) -> bool:
-        return self.started and self._status.done
+        return self.status.done
 
     """
     To track the status of the task for the decision engine, we must create a
@@ -112,27 +117,23 @@ class BlueskyTask:
     the decision engine, or else a ConditionalTask, etc.
     """
 
-    def execute(self, args: PlanArgs) -> PlanOutput:
-        self._logger.info(msg=f"Task {self.name} started at "
-                              f"{time()}, with args: {args}")
-        yield from self._run_task(*args)
-        return self._status
+    def execute(self, args) -> Generator[Msg, None, Status]:
+        self._logger.info(f"Task {self.name} begun at {time()}")
+        yield from self._run_task(self.organise_inputs(*args))
+        return self.status
 
-    """
-    The actual commands to be executed by this task.
-    This should set the status of the task as finished if this is not updated by a
-    callback from another status
-    """
+    @abstractmethod
+    def organise_inputs(self, *args) -> InputType:
+        ...
 
-    def _run_task(self, *args: PlanArgs) -> PlanOutput:
-        self._logger.info(msg=f"Task {self.name} finished at {time()}")
-        self._status.set_finished()
-        yield from ()  # Yields from the immutable empty Tuple
+    @abstractmethod
+    def _run_task(self, inputs: InputType) -> Generator[Msg, None, None]:
+        ...
 
     def add_result(self, result: Any) -> None:
         self._results.append(result)
 
-    def _overwrite_results(self, results: Optional[List[Any]] = None) -> None:
+    def _overwrite_results(self, results: List[Any] = None) -> None:
         if results is None:
             results = []
         self._results = results

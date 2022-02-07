@@ -20,7 +20,7 @@ class FailingDevice(SynAxis):
         super().__init__(name=name, delay=3)
         self.exception = TaskFail if fatal_exception else TaskStop
 
-    def set(self, value):
+    def set(self, value) -> DeviceStatus:
         st = DeviceStatus(self)
         st.set_exception(self.exception())
         return st
@@ -44,9 +44,9 @@ class FailingDecisionEngineControlObject(DecisionEngineControlObject):
         failing_task = RecoveringFromNonFatalExceptionSetTask("Failing Task")
         future_task = SetTask("Future task")
 
-        return TaskGraph({prior_task: [],
-                          failing_task: [prior_task],
-                          future_task: [failing_task]},
+        return TaskGraph({prior_task: set(),
+                          failing_task: {prior_task},
+                          future_task: {failing_task}},
                          {failing_task: ["second_device", "value"],
                           prior_task: ["first_device", "value"],
                           future_task: ["third_device", "value"]}, {})
@@ -58,10 +58,10 @@ class RecoveringFromNonFatalExceptionSetTask(SetTask):
     graph to fail and attempt the next loop.
     """
 
-    def _handle_exception(self, exception: Exception):
+    def _handle_exception(self, exception: Exception) -> None:
         if isinstance(exception, DestroyedError):
             exception = TaskStop()
-        self._status.set_exception(exception)
+        self.status.set_exception(exception)
 
 
 # TODO: Breaks after one

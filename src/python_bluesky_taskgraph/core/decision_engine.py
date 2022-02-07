@@ -1,7 +1,7 @@
 import logging
-from typing import Any, Callable, Dict, Iterator, List, Optional, Tuple
+from typing import Any, Callable, Dict, Generator, Iterator, List, Optional, Set, Tuple
 
-from bluesky import RunEngine
+from bluesky import Msg, RunEngine
 from bluesky.suspenders import SuspendCeil
 from ophyd import Signal
 from ophyd.status import Status
@@ -12,7 +12,6 @@ from python_bluesky_taskgraph.core.task import (
     TaskFail,
 )
 from python_bluesky_taskgraph.core.task_graph import TaskGraph
-from python_bluesky_taskgraph.core.types import PlanOutput, Variables
 
 logger = logging.getLogger("task")
 
@@ -47,14 +46,15 @@ class DecisionEngineControlObject(SuspendCeil):
         self._run_engine = run_engine
         self._known_values = known_values or {}
         self._run_engine.install_suspender(self)
-        self._should_stop_at_end_of_next_run = False
-        self._error_tasks = {}
-        self._recovered_tasks = set()
+        self._should_stop_at_end_of_next_run: bool = False
+        self._error_tasks: Dict[str, int] = {}
+        self._recovered_tasks: Set[str] = set()
 
     # TODO: Track by Task or by ExceptionType or... ?
-    def handle_exception(self, task_name: str, exception: Exception) -> None:
+    def handle_exception(self, task_name: str,
+                         exception: Optional[Exception] = None) -> None:
         if not exception:
-            return self.handle_success(task_name)
+            self.handle_success(task_name)
         # If we have not anticipated this error, it is a TaskFail
         if not isinstance(exception, DecisionEngineKnownException):
             exception = TaskFail()
@@ -117,10 +117,12 @@ class DecisionEngineControlObject(SuspendCeil):
         """
         ...
 
-    def decision_engine_plan(self, task_graph: TaskGraph, variables: Variables = None) \
-            -> PlanOutput:
-        yield from decision_engine_plan(
+    def decision_engine_plan(self, task_graph: TaskGraph,
+                             variables: Dict[str, Any] = None) \
+            -> Generator[Msg, None, Status]:
+        ret = yield from decision_engine_plan(
             task_graph, variables or self._known_values, self.handle_exception)
+        return ret
 
     # TODO: Move the run engine loop to another thread so this can be called whenever
     def _pause_run_engine(self, defer=False) -> None:
@@ -136,13 +138,13 @@ class DecisionEngineControlObject(SuspendCeil):
         else:
             self._error_tasks.pop(task_name)
 
-    def add_value(self, name: str, value: Any):
+    def add_value(self, name: str, value: Any) -> None:
         self.add_values({name: value})
 
-    def add_values(self, dictionary: Dict[str, Any]):
+    def add_values(self, dictionary: Dict[str, Any]) -> None:
         self._known_values.update(dictionary)
 
-    def remove_value(self, obj: Any):
+    def remove_value(self, obj: Any) -> None:
         if obj in self._known_values.values():
             self._known_values = {key: value for key, value in
                                   self._known_values.items() if value != obj}
@@ -150,11 +152,11 @@ class DecisionEngineControlObject(SuspendCeil):
             self._known_values = {key: value for key, value in
                                   self._known_values.items() if key != obj}
 
-    def __getitem__(self, item):
+    def __getitem__(self, item) -> Any:
         return self._known_values[item]
 
-    def __setitem__(self, key, value):
-        return self._known_values.__setitem__(key, value)
+    def __setitem__(self, key, value) -> None:
+        self._known_values.__setitem__(key, value)
 
 
 # TODO: Allow DE to be paused after current task?
@@ -170,16 +172,16 @@ class DecisionEngine:
     dependencies should not only consider hardware constraints but output/input pairs
     """
 
-    def __init__(self, task_graph: TaskGraph, variables: Variables,
-                 exception_tracking_callback: Optional[
-                     Callable[[str, Optional[Exception]], None]]):
+    def __init__(self, task_graph: TaskGraph, variables: Dict[str, Any],
+                 exception_tracking_callback:
+                 Optional[Callable[[str, Optional[Exception]], None]] = None):
         self._task_graph = task_graph
         self._variables = dict(variables)
         self.validate()
         # TODO: better way to prevent Task: [None] being an issue
-        self._completed_tasks = {None}
-        self.started_tasks = set()
-        self._failed_tasks = set()
+        self._completed_tasks: Set[BlueskyTask] = set()
+        self.started_tasks: Set[BlueskyTask] = set()
+        self._failed_tasks: Set[str] = set()
         self._exception_tracking_callback = exception_tracking_callback
         for task in self._task_graph.graph.keys():
             task.add_complete_callback(self.finish_task)
@@ -192,31 +194,30 @@ class DecisionEngine:
 
     def finish_task(self, status: Status) -> None:
         task = status.obj
+        exc = status.exception(None)
         if status.success:
             # Ensure we add any outputs before letting tasks that depend on this begin
-            self._variables.update(
-                task.get_results(self._task_graph.outputs.get(task, [])))
+            self._variables.update(task.get_results(
+                self._task_graph.outputs.get(task, [])))
             self._completed_tasks.add(task)
-            # TODO: Exception when tasks finish too quickly
-            self._exception_tracking_callback(task.name, None)
         else:
             # Task is finished so no timeout necessary
-            exc = status.exception(None)
             logger.warning(f"Task {task}", exc_info=exc)
-            if self._exception_tracking_callback:
-                self._exception_tracking_callback(task.name(), exc)
             self._failed_tasks.add(task)
+        if self._exception_tracking_callback:
+            self._exception_tracking_callback(task.name(), exc)
 
     # TODO: How to handle failure of tasks
+    @property
     def is_complete(self) -> bool:
-        return (len(self._failed_tasks) or
-                all([t.complete() for t in self._task_graph.graph.keys()]))
+        return bool(len(self._failed_tasks)) or all([t.complete for t in
+                                                     self._task_graph.graph.keys()])
 
     def give_valid_tasks(self) -> Iterator[Tuple[BlueskyTask, List[Any]]]:
         # TODO: iter?
         # Start any pending task that has its dependencies fulfilled
         tasks = [t for t in self._task_graph.graph.keys()
-                 if not (t.started() or t in self.started_tasks)
+                 if t not in self.started_tasks
                  and self._task_graph.graph[t].issubset(self._completed_tasks)]
         task_inputs = [[self._variables.get(a, None) for a in
                         self._task_graph.inputs.get(t, [])] for t in tasks]
@@ -234,14 +235,22 @@ class DecisionEngine:
         if unknown_values:
             raise Exception(f"Unknown values! {unknown_values}")
 
+    @property
+    def status(self) -> Status:
+        return Status(done=True) and \
+               {task.status for task in self._task_graph.graph.keys()}
 
-def decision_engine_plan(task_graph: TaskGraph, variables: Variables = None,
-                         exception_handling: Optional[Callable[[str, Exception], None]]
-                         = None) -> PlanOutput:
+
+def decision_engine_plan(task_graph: TaskGraph,
+                         variables: Dict[str, Any] = None,
+                         exception_handling:
+                         Optional[Callable[[str, Optional[Exception]], None]] = None) \
+        -> Generator[Msg, None, Status]:
     if not variables:
         variables = {}
     decision_engine = DecisionEngine(task_graph, variables, exception_handling)
-    while not decision_engine.is_complete():
+    while not decision_engine.is_complete:
         for (task, args) in decision_engine.give_valid_tasks():
             decision_engine.started_tasks.add(task)
             yield from task.execute(args)
+    return decision_engine.status

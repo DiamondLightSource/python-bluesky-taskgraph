@@ -1,42 +1,48 @@
-from typing import List
-from unittest.mock import Mock, call
+from dataclasses import dataclass
+from typing import Generator, List
+from unittest.mock import MagicMock, call
 
-from bluesky import RunEngine
-from mocks import mock_task
+from bluesky import Msg, RunEngine
 
 from python_bluesky_taskgraph.core.decision_engine import decision_engine_plan
+from python_bluesky_taskgraph.core.task import BlueskyTask
 from python_bluesky_taskgraph.core.task_graph import TaskGraph
+from python_bluesky_taskgraph.core.types import Input
+from python_bluesky_taskgraph.tasks.behavioural_tasks import NoOpTask
+
+
+def get_results(entries: List[str]):
+    return zip(entries, {"passed"})
 
 
 def test_taskgraph_passes_args():
-    first_task = mock_task(name="First Task")
-    second_task = mock_task(name="Second Task")
+    manager = MagicMock()
+    first_task = NoOpTask("First Task")
+    first_task.execute = MagicMock(wraps=first_task.execute)
+    # Inject a return from the NoOpTask
+    first_task.get_results = MagicMock(wraps=get_results)
+    second_task = NoOpTask("First Task")
+    second_task.execute = MagicMock(wraps=second_task.execute)
+    second_task.get_results = MagicMock(wraps=second_task.get_results)
 
-    def return_passed(keys: List[str]):
-        return zip(keys, ["passed"])
+    manager.configure_mock(first=first_task.execute,
+                           second=first_task.get_results,
+                           third=second_task.execute,
+                           fourth=second_task.get_results)
 
-    first_task.get_results.side_effect = return_passed
-
-    tasks = TaskGraph({first_task: [], second_task: [first_task]},
+    tasks = TaskGraph({first_task: {}, second_task: {first_task}},
                       {first_task: ["input"], second_task: ["output arg"]},
                       {first_task: ["output arg"]})
 
-    manager = Mock()
-
-    manager.first_task = first_task
-    manager.second_task = second_task
-
     expected_calls = [
-        call.first_task.execute(["expected input"]),
-        call.first_task.get_results(["output arg"]),
-        call.second_task.execute(["passed"]),
-        call.second_task.get_results([])
+        call.first(["expected input"]),
+        call.second(["output arg"]),
+        call.third(["passed"]),
+        call.fourth([])
     ]
-    re = RunEngine({})
 
-    re(decision_engine_plan(tasks,
-                            {"output": "expected output",
-                             "input": "expected input"}))
+    re = RunEngine({})
+    re(decision_engine_plan(tasks, {"input": "expected input"}))
 
     for expected_call in expected_calls:
         assert expected_call in manager.mock_calls
@@ -46,32 +52,126 @@ def test_taskgraph_passes_args():
 
 
 def test_taskgraph_updates_args():
-    first_task = mock_task(name="First Task")
-    second_task = mock_task(name="Second Task")
+    manager = MagicMock()
+    first_task = NoOpTask("First Task")
+    first_task.execute = MagicMock(wraps=first_task.execute)
+    # Inject a return from the NoOpTask
+    first_task.get_results = MagicMock(wraps=get_results)
+    second_task = NoOpTask("First Task")
+    second_task.execute = MagicMock(wraps=second_task.execute)
+    second_task.get_results = MagicMock(wraps=second_task.get_results)
 
-    def return_passed(keys: List[str]):
-        return zip(keys, ["updated arg"])
+    manager.configure_mock(first=first_task.execute,
+                           second=first_task.get_results,
+                           third=second_task.execute,
+                           fourth=second_task.get_results)
 
-    first_task.get_results.side_effect = return_passed
-
-    tasks = TaskGraph({first_task: [], second_task: [first_task]},
-                      {first_task: ["input"], second_task: ["input"]},
-                      {first_task: ["input"]})
-
-    manager = Mock()
-
-    manager.first_task = first_task
-    manager.second_task = second_task
+    tasks = TaskGraph({first_task: {}, second_task: {first_task}},
+                      {first_task: ["input"], second_task: ["output arg"]},
+                      {first_task: ["output arg"]})
 
     expected_calls = [
-        call.first_task.execute(["initial arg"]),
-        call.first_task.get_results(["input"]),
-        call.second_task.execute(["updated arg"]),
-        call.second_task.get_results([])
+        call.first(["expected input"]),
+        call.second(["output arg"]),
+        call.third(["passed"]),
+        call.fourth([])
     ]
-    re = RunEngine({})
 
-    re(decision_engine_plan(tasks, {"input": "initial arg"}))
+    re = RunEngine({})
+    re(decision_engine_plan(tasks,
+                            {"input": "expected input",
+                             "output arg": "replaced"}))
+
+    for expected_call in expected_calls:
+        assert expected_call in manager.mock_calls
+
+    method_calls = [calls for calls in manager.method_calls if calls in expected_calls]
+    assert (method_calls == expected_calls)
+
+
+class ExampleTask(BlueskyTask['ExampleTask.SimpleInput']):
+
+    @dataclass
+    class SimpleInput(Input):
+        statement: str
+
+    def _run_task(self, inputs: SimpleInput) -> Generator[Msg, None, None]:
+        yield from self._add_callback_or_complete(None)
+
+    def organise_inputs(self, *args) -> SimpleInput:
+        return ExampleTask.SimpleInput(*args)
+
+    def __init__(self):
+        super().__init__("Example Task")
+
+
+class MultipleArgumentTask(BlueskyTask['MultipleArgumentTask.SimpleInput']):
+
+    def _run_task(self, inputs: 'MultipleArgumentTask.SimpleInput') \
+            -> Generator[Msg, None, None]:
+        yield from self._add_callback_or_complete(None)
+
+    def organise_inputs(self, *args) -> 'MultipleArgumentTask.SimpleInput':
+        return MultipleArgumentTask.SimpleInput(*args)
+
+    @dataclass
+    class SimpleInput(Input):
+        statement: str
+        number: int
+
+    def __init__(self):
+        super().__init__("Example Task")
+
+
+def test_task_constructs_tuple():
+    manager = MagicMock()
+    first_task = ExampleTask()
+    first_task.execute = MagicMock(wraps=first_task.execute)
+    first_task._run_task = MagicMock(wraps=first_task._run_task)
+
+    manager.configure_mock(first=first_task.execute,
+                           second=first_task._run_task)
+
+    tasks = TaskGraph({first_task: set()},
+                      {first_task: ["input"]},
+                      {first_task: list()})
+
+    expected_calls = [
+        call.first(["expected input"]),
+        call.second(ExampleTask.SimpleInput("expected input"))
+    ]
+
+    re = RunEngine({})
+    re(decision_engine_plan(tasks, {"input": "expected input"}))
+
+    for expected_call in expected_calls:
+        assert expected_call in manager.mock_calls
+
+    method_calls = [calls for calls in manager.method_calls if calls in expected_calls]
+    assert (method_calls == expected_calls)
+
+
+def test_task_constructs_more_complicated_tuple():
+    manager = MagicMock()
+    first_task = MultipleArgumentTask()
+    first_task.execute = MagicMock(wraps=first_task.execute)
+    first_task._run_task = MagicMock(wraps=first_task._run_task)
+
+    manager.configure_mock(first=first_task.execute,
+                           second=first_task._run_task)
+
+    tasks = TaskGraph({first_task: set()},
+                      {first_task: ["input", "second"]},
+                      {first_task: list()})
+
+    expected_calls = [
+        call.first(["expected input", 7]),
+        call.second(MultipleArgumentTask.SimpleInput("expected input", 7))
+    ]
+
+    re = RunEngine({})
+    re(decision_engine_plan(tasks, {"input": "expected input",
+                                    "second": 7}))
 
     for expected_call in expected_calls:
         assert expected_call in manager.mock_calls

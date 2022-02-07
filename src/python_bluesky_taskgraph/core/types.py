@@ -1,17 +1,42 @@
-from typing import Any, Callable, Dict, Generator, List, Optional
+from dataclasses import dataclass, field
+from typing import Any, Dict, Generator, List, Optional, TypeVar
 
 from bluesky import Msg
-from bluesky.protocols import Status
+from ophyd import Device
 
-BlueskyTask = "python_bluesky_taskgraph.core.task.BlueskyTask"
+TaskOutput = Generator[Msg, None, None]
 
-Graph = Dict[BlueskyTask, List[BlueskyTask]]
-Input = Dict[BlueskyTask, List[str]]
-Output = Dict[BlueskyTask, List[str]]
 
-Variables = Dict[str, Any]
-PlanArgs = Optional[List[Any]]
-KwArgs = Optional[Dict[str, Any]]
+@dataclass
+class Input:
+    ...
 
-PlanOutput = Generator[Msg, None, None or Status]
-PlanCallable = Callable[[Optional[PlanArgs], Optional[KwArgs]], PlanOutput]
+
+@dataclass
+class EmptyInput(Input):
+    ...
+
+
+@dataclass
+class KwArgs(Input):
+    kwargs: Dict[str, Any] = field(default_factory=dict)
+
+
+@dataclass
+class GroupArg(Input):
+    group: Optional[str]
+
+
+@dataclass
+class Devices(Input):
+    devices: List[Device]
+
+
+@dataclass
+class SetInputs(Input):
+    group: str
+    value: Any
+    kwargs: Dict[str, Any] = field(default_factory=dict)
+
+
+InputType = TypeVar('InputType', bound=Input)

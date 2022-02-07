@@ -1,4 +1,10 @@
-from python_bluesky_taskgraph.core.types import Graph, Input, Output
+from typing import Dict, List, Set
+
+from python_bluesky_taskgraph.core.task import BlueskyTask
+
+Graph = Dict[BlueskyTask, Set[BlueskyTask]]
+Input = Dict[BlueskyTask, List[str]]
+Output = Dict[BlueskyTask, List[str]]
 
 
 def _format_task(task, dependencies, inputs, outputs):
@@ -39,7 +45,7 @@ class TaskGraph:
         return str(
             [_format_task(*task) for task in zip(tasks, dependencies, inputs, outputs)])
 
-    def __len__(self):
+    def __len__(self) -> int:
         return len(self.graph)
 
     """
@@ -48,6 +54,7 @@ class TaskGraph:
     And adds the other graph to this graph.
     Returns the combined graph to allow chaining of this method
     """
+
     def depends_on(self, other: 'TaskGraph') -> 'TaskGraph':
         new_dependencies = set(other.graph.keys())
         for _, dependencies in self.graph.items():
@@ -60,5 +67,6 @@ class TaskGraph:
     And adds this graph to the other graph.
     Returns the combined graph to allow chaining of this method
     """
+
     def is_depended_on_by(self, other: 'TaskGraph') -> 'TaskGraph':
         return other.depends_on(self)

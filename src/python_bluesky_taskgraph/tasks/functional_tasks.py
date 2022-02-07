@@ -1,21 +1,24 @@
-from typing import List, Optional
+from abc import ABC
+from dataclasses import dataclass, field
+from typing import Any, Callable, Dict, Generator, Generic, List, Optional
 
+from bluesky import Msg
 from bluesky.plan_stubs import create, read, save
 from bluesky.protocols import Status
 from ophyd import Device, DeviceStatus
 
 from python_bluesky_taskgraph.core.task import BlueskyTask
-from python_bluesky_taskgraph.core.types import KwArgs, PlanCallable, PlanOutput
+from python_bluesky_taskgraph.core.types import Devices, Input, InputType, TaskOutput
 from python_bluesky_taskgraph.tasks.behavioural_tasks import read_device
 
 
-class DeviceCallbackTask(BlueskyTask):
+class DeviceCallbackTask(Generic[InputType], BlueskyTask[InputType], ABC):
     """
-    Utility Task to define a task that waits for a Device to finish moving before
-    considering itself complete
+    Utility Task to define a task that waits for a Device to finish and adds its final
+    value as a result
     """
 
-    def propagate_status(self, status: Status):
+    def propagate_status(self, status: Status) -> None:
         super().propagate_status(status)
         if isinstance(status, DeviceStatus):
             # status.device is Movable, so must be Readable
@@ -25,7 +28,7 @@ class DeviceCallbackTask(BlueskyTask):
         #  DeviceStatus?
 
 
-class DeviceTask(DeviceCallbackTask):
+class DeviceTask(Generic[InputType], DeviceCallbackTask[InputType], ABC):
     """
     Utility Task to define a task instantiated with a device
     """
@@ -35,7 +38,7 @@ class DeviceTask(DeviceCallbackTask):
         self._device = device
 
 
-class ReadBeamlineState(BlueskyTask):
+class ReadBeamlineState(BlueskyTask[Devices]):
     """
     TODO: Is this the right way to do this?
     Task that
@@ -44,18 +47,21 @@ class ReadBeamlineState(BlueskyTask):
     So we can track the beamline state over multiple tasks/runs
     """
 
+    def organise_inputs(self, *args) -> Devices:
+        return Devices(*args)
+
     def __init__(self):
         super().__init__("Reading Beamline state")
 
-    def _run_task(self, *devices: List[Device]) -> PlanOutput:
+    def _run_task(self, devices: Devices) -> TaskOutput:
         yield from create(name="beamline_state")
-        for device in devices:
+        for device in devices.devices:
             yield from read(device)
         yield from save()
-        yield from BlueskyTask._run_task(self)
+        yield from self._add_callback_or_complete(None)
 
 
-class PlanTask(BlueskyTask):
+class PlanTask(BlueskyTask['PlanTask.PlanInputs']):
     """
     TODO: Is there a better way to do this kind of task?
     Task that yields all instructions from a pre-existing plan or plan stub.
@@ -65,15 +71,24 @@ class PlanTask(BlueskyTask):
     appropriate for the Plan, without any unknown method args.
     """
 
-    def __init__(self, name: str, plan: PlanCallable):
-        super().__init__(name)
-        self._plan: PlanCallable = plan
+    @dataclass
+    class PlanInputs(Input):
+        args: List[Any]
+        kwargs: Dict[str, Any] = field(default_factory=dict)
 
-    def _run_task(self, kwargs: KwArgs = None) -> PlanOutput:
-        if kwargs is None:
-            kwargs = {}
-        ret: Optional[Status] = yield from self._plan(*kwargs.pop("args", []), **kwargs)
-        if ret:
-            ret.add_callback(self.propagate_status)
-        else:
-            yield from BlueskyTask._run_task(self)
+    Plan = Callable[..., Generator[Msg, None, Optional[Status]]]
+
+    def __init__(self, name: str, plan: Plan):
+        super().__init__(name)
+        self._plan = plan
+
+    def organise_inputs(self, *args) -> PlanInputs:
+        return PlanTask.PlanInputs(*args)
+
+    def _run_task(self, inputs: PlanInputs) -> TaskOutput:
+        args = inputs.args or []
+        kwargs = inputs.kwargs
+        ret: Optional[Status] = yield from self._plan(*args, **kwargs)
+        # If the Plan returns a Status, we watch it, else we can only presume we are
+        #  done
+        yield from self._add_callback_or_complete(ret)

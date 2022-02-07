@@ -1,4 +1,5 @@
-from typing import Any, List, Optional
+from dataclasses import dataclass, field
+from typing import Any, Dict, Optional
 
 from bluesky.plan_stubs import (
     abs_set,
@@ -15,10 +16,18 @@ from bluesky.protocols import Status
 from ophyd import Device
 
 from python_bluesky_taskgraph.core.task import BlueskyTask
-from python_bluesky_taskgraph.core.types import KwArgs, PlanOutput
+from python_bluesky_taskgraph.core.types import (
+    EmptyInput,
+    GroupArg,
+    Input,
+    KwArgs,
+    SetInputs,
+    TaskOutput,
+)
 from python_bluesky_taskgraph.tasks.behavioural_tasks import read_device
 from python_bluesky_taskgraph.tasks.functional_tasks import (
     DeviceCallbackTask,
+    Devices,
     DeviceTask,
 )
 
@@ -26,7 +35,7 @@ from python_bluesky_taskgraph.tasks.functional_tasks import (
 # TODO: Are these useful? Tasks should be larger than plan stubs,
 #  should be a chunk of behaviour.
 #  e.g. not abs_set(device, location) but "Move devices out of beam"
-class OpenRunTask(BlueskyTask):
+class OpenRunTask(BlueskyTask[KwArgs]):
     """
     Task to open a Bluesky run: the run_id is randomly generated and available as a
     result of this task
@@ -42,13 +51,16 @@ class OpenRunTask(BlueskyTask):
     def __init__(self):
         super().__init__("Open Run Task")
 
-    def _run_task(self, md: KwArgs = None) -> PlanOutput:
-        run_id = yield from open_run(md)
+    def _run_task(self, metadata: KwArgs) -> TaskOutput:
+        run_id = yield from open_run(**metadata.kwargs)
         self.add_result(run_id)
-        yield from BlueskyTask._run_task(self)
+        yield from self._add_callback_or_complete(None)
+
+    def organise_inputs(self, *args) -> KwArgs:
+        return KwArgs(*args)
 
 
-class CloseRunTask(BlueskyTask):
+class CloseRunTask(BlueskyTask['CloseRunTask.CloseRun']):
     """
     Task to close a Bluesky run: exit_status and reason are optional.
     Default case: exit_status = None, reason = None and the values are taken from the
@@ -64,17 +76,25 @@ class CloseRunTask(BlueskyTask):
     :func:`bluesky.plan_stubs.close_run`
     """
 
+    @dataclass
+    class CloseRun(Input):
+        exit_status: Optional[str] = None
+        reason: Optional[str] = None
+
     def __init__(self):
         super().__init__("Close Run Task")
 
-    def _run_task(self, exit_status: Optional[str] = None,
-                  reason: Optional[str] = None) -> PlanOutput:
-        run_id = yield from close_run(exit_status, reason)
+    def organise_inputs(self, *args) -> CloseRun:
+        return CloseRunTask.CloseRun(*args)
+
+    def _run_task(self, run_close_args: CloseRun) -> TaskOutput:
+        run_id = yield from close_run(run_close_args.exit_status,
+                                      run_close_args.reason)
         self.add_result(run_id)
-        yield from BlueskyTask._run_task(self)
+        yield from self._add_callback_or_complete(None)
 
 
-class SleepTask(BlueskyTask):
+class SleepTask(BlueskyTask['SleepTask.SleepArgs']):
     """
     Task to request a sleep on the current plan without interrupting the RunEngine's
     processing of interrupts etc.
@@ -88,16 +108,23 @@ class SleepTask(BlueskyTask):
     :func:`bluesky.plan_stubs.sleep`
     """
 
+    @dataclass
+    class SleepArgs(Input):
+        sleep_time: Optional[float] = None
+
+    def organise_inputs(self, *args) -> SleepArgs:
+        return SleepTask.SleepArgs(*args)
+
     def __init__(self, name: str, sleep_time: Optional[float] = None):
         super().__init__(name)
-        self._sleep_time = sleep_time or 1
+        self.sleep_time = sleep_time or 1
 
-    def _run_task(self, sleep_time: Optional[float] = 0) -> PlanOutput:
-        yield from sleep(sleep_time or self._sleep_time)
-        yield from BlueskyTask._run_task(self)
+    def _run_task(self, sleep_time: SleepArgs) -> TaskOutput:
+        ret = yield from sleep(sleep_time.sleep_time or self.sleep_time)
+        yield from self._add_callback_or_complete(ret)
 
 
-class WaitTask(BlueskyTask):
+class WaitTask(BlueskyTask[GroupArg]):
     """
     Task to request the RunEngine waits until all statuses associated with a group
     have finished before continuing to the next task
@@ -110,12 +137,26 @@ class WaitTask(BlueskyTask):
     :func:`bluesky.plan_stubs.wait`
     """
 
-    def _run_task(self, group: Optional[str] = None) -> PlanOutput:
-        yield from wait(group=group)
-        yield from BlueskyTask._run_task(self)
+    def organise_inputs(self, *args) -> GroupArg:
+        return GroupArg(*args)
+
+    def _run_task(self, group: GroupArg) -> TaskOutput:
+        ret = yield from wait(group=group.group)
+        yield from self._add_callback_or_complete(ret)
 
 
-class SetTask(DeviceCallbackTask):
+class SetDeviceTask(DeviceTask[SetInputs]):
+
+    def _run_task(self, inputs: SetInputs) -> TaskOutput:
+        self.add_result(read_device(self._device))
+        ret: Optional[Status] = yield from \
+            abs_set(self._device, inputs.value,
+                    group=inputs.group or self.name, **inputs.kwargs or {})
+        self.add_result(read_device(self._device))
+        yield from self._add_callback_or_complete(ret)
+
+
+class SetTask(DeviceCallbackTask['SetTask.SetDeviceInputs']):
     """
     Task to request the RunEngine set a Movable to a value, completes when the move is
     completed. Can be added to a group if required, otherwise a group is constructed
@@ -133,45 +174,49 @@ class SetTask(DeviceCallbackTask):
     :func:`bluesky.plan_stubs.set`
     """
 
-    def _run_task(self, device: Device, value: Any, group: Optional[str] = None) \
-            -> PlanOutput:
-        self.add_result(read_device(device))
-        ret: Optional[Status] = yield from abs_set(device, value,
-                                                   group=group or self.name)
-        if ret:
-            ret.add_callback(self.propagate_status)
-        else:
-            BlueskyTask._run_task(self)
+    @dataclass
+    class SetDeviceInputs(Input):
+        device: Device
+        value: Any
+        group: Optional[str] = None
+        kwargs: Dict[str, Any] = field(default_factory=dict)
+
+    @staticmethod
+    def organise_inputs(*args) -> SetDeviceInputs:
+        return SetTask.SetDeviceInputs(args[0], args[1])
+
+    def _run_task(self, inputs: SetDeviceInputs) -> TaskOutput:
+        self.add_result(read_device(inputs.device))
+        ret: Optional[Status] = yield from \
+            abs_set(inputs.device, inputs.value,
+                    group=inputs.group or self.name, **inputs.kwargs)
+        yield from self._add_callback_or_complete(ret)
 
 
-class SetDeviceTask(DeviceTask):
+class SetKnownValueDeviceTask(DeviceTask['SetKnownValueDeviceTask.SetKnownInputs']):
 
-    def _run_task(self, value: Any, group: Optional[str] = None) -> PlanOutput:
-        self.add_result(read_device(self._device))
-        ret: Optional[Status] = yield from abs_set(self._device, value,
-                                                   group=group or self.name)
-        if ret:
-            ret.add_callback(self.propagate_status)
-        else:
-            BlueskyTask._run_task(self)
+    @dataclass
+    class SetKnownInputs(Input):
+        group: Optional[str] = None
+        kwargs: Dict[str, Any] = field(default_factory=dict)
 
+    @staticmethod
+    def organise_inputs(*args) -> SetKnownInputs:
+        return SetKnownValueDeviceTask.SetKnownInputs(*args)
 
-class SetKnownValueDeviceTask(DeviceTask):
     def __init__(self, name: str, device: Device, value: Any):
         super().__init__(name, device)
         self._value = value
 
-    def _run_task(self, group: Optional[str]) -> PlanOutput:
+    def _run_task(self, inputs: SetKnownInputs) -> TaskOutput:
         self.add_result(read_device(self._device))
-        ret: Optional[Status] = yield from abs_set(self._device, self._value,
-                                                   group=group or self.name)
-        if ret:
-            ret.add_callback(self.propagate_status)
-        else:
-            BlueskyTask._run_task(self)
+        ret: Optional[Status] = yield from \
+            abs_set(self._device, self._value, inputs.group or self.name,
+                    **inputs.kwargs)
+        yield from self._add_callback_or_complete(ret)
 
 
-class StageTask(BlueskyTask):
+class StageTask(BlueskyTask['StageTask.DeviceInput']):
     """
     Task to stage a device
     See Also
@@ -179,24 +224,32 @@ class StageTask(BlueskyTask):
     :func:`bluesky.plan_stubs.stage`
     """
 
-    def _run_task(self, device: Device) -> PlanOutput:
-        list_of_staged_devices = yield from stage(device)
+    @dataclass
+    class DeviceInput(Input):
+        device: Device
+
+    def organise_inputs(self, *args) -> DeviceInput:
+        return StageTask.DeviceInput(*args)
+
+    def _run_task(self, inputs: DeviceInput) -> TaskOutput:
+        list_of_staged_devices = yield from stage(inputs.device)
         self._overwrite_results(list_of_staged_devices)
         # TODO: Can we get a callback for the staging of this device?
         #  Or else, is this blocking until the device is staged?
-        yield from BlueskyTask._run_task(self)
+        yield from self._add_callback_or_complete(None)
 
 
-class StageDeviceTask(DeviceTask):
+class StageDevicesTask(DeviceTask[EmptyInput]):
 
-    def _run_task(self) -> PlanOutput:
+    def _run_task(self, inputs: EmptyInput) -> TaskOutput:
         list_of_stages_devices = yield from stage(self._device)
         self._overwrite_results(list_of_stages_devices)
         # TODO: as above
-        yield from BlueskyTask._run_task(self)
+        yield from self._add_callback_or_complete(None)
 
 
-class ReadDevicesAndEmitEventDocument(BlueskyTask):
+class ReadDevicesAndEmitEventDocument(
+       BlueskyTask['ReadDevicesAndEmitEventDocument.DevicesAndStreamName']):
     """
     Task to request the RunEngine read all devices into a document, then emit it in a
     given stream,
@@ -208,9 +261,17 @@ class ReadDevicesAndEmitEventDocument(BlueskyTask):
     :func:`bluesky.plan_stubs.save`
     """
 
-    def _run_task(self, name: str = "primary", *devices: List[Device]) -> PlanOutput:
+    @dataclass
+    class DevicesAndStreamName(Devices):
+        stream_name: str
+
+    def organise_inputs(self, *args) -> DevicesAndStreamName:
+        return ReadDevicesAndEmitEventDocument.DevicesAndStreamName(*args)
+
+    def _run_task(self, inputs: DevicesAndStreamName) -> TaskOutput:
+        name = inputs.stream_name or "Primary"
         yield from create(name)
-        for device in devices:
+        for device in inputs.devices:
             yield from read(device)  # Read returns a dictionary, not a Status
         yield from save()
-        yield from BlueskyTask._run_task(self)
+        yield from self._add_callback_or_complete(None)

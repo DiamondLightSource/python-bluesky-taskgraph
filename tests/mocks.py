@@ -1,27 +1,28 @@
-from unittest.mock import Mock
+from unittest.mock import MagicMock, PropertyMock
 
 from ophyd import Device
 from ophyd.sim import SynAxis
 
 from python_bluesky_taskgraph.core.task import BlueskyTask
+from python_bluesky_taskgraph.tasks.behavioural_tasks import NoOpTask
 
 
 def mock_task(wrapped_task: BlueskyTask = None, name: str = "Mock task") -> BlueskyTask:
-    wrapped_task = wrapped_task or BlueskyTask(name=name)
-    task = Mock(wraps=wrapped_task)
-    task._status = wrapped_task._status
-
+    if wrapped_task is None:
+        wrapped_task = NoOpTask(name)
+    task = MagicMock(wraps=wrapped_task)
+    task.execute = MagicMock(wraps=wrapped_task.execute)
+    task.get_results = MagicMock(wraps=wrapped_task.get_results)
+    task.status = PropertyMock(wraps=wrapped_task.status)
+    task.complete = PropertyMock(wraps=wrapped_task.complete)
+    task.add_complete_callback = MagicMock(wraps=wrapped_task.add_complete_callback)
     return task
 
 
-def mock_device(device: Device = None, name: str = "Mock Device") -> Device:
-    device = device or SynAxis(name=name)
-    mock = Mock(wraps=device)
-
-    def read():
-        return device.read()
-
-    mock.read.side_effect = read
-    mock.name = device.name
-
-    return mock
+def mock_device(wrapped_device: Device = None, name: str = "Mock Device") -> Device:
+    if wrapped_device is None:
+        wrapped_device = SynAxis(name=name)
+    device = MagicMock(wraps=wrapped_device)
+    device.read = MagicMock(wraps=wrapped_device.read)
+    device.name = name or wrapped_device.name
+    return device

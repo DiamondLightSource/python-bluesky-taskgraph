@@ -1,17 +1,11 @@
-from time import sleep
-from typing import Any, Optional
-from unittest.mock import Mock, call
+from unittest.mock import MagicMock, Mock, call
 
 from bluesky import RunEngine
-from bluesky.plan_stubs import abs_set
-from bluesky.protocols import Status
-from mocks import mock_task
-from ophyd import Device
 from ophyd.sim import SynAxis
 
 from python_bluesky_taskgraph.core.decision_engine import decision_engine_plan
 from python_bluesky_taskgraph.core.task_graph import TaskGraph
-from python_bluesky_taskgraph.core.types import PlanOutput
+from python_bluesky_taskgraph.tasks.behavioural_tasks import NoOpTask
 from python_bluesky_taskgraph.tasks.stub_tasks import SetTask
 
 '''
@@ -31,34 +25,39 @@ tasks = final_tasks.depends_on(penultimate_tasks).[...]
 
 
 def test_order_of_tasks():
-    first_task = mock_task(name="First Task")
-    second_task = mock_task(name="Second Task")
-    third_task = mock_task(name="Third Task")
+    manager = MagicMock()
+    first_task = NoOpTask("First Task")
+    first_task.execute = MagicMock(wraps=first_task.execute)
+    first_task.get_results = MagicMock(wraps=first_task.get_results)
+    second_task = NoOpTask("Second Task")
+    second_task.execute = MagicMock(wraps=second_task.execute)
+    second_task.get_results = MagicMock(wraps=second_task.get_results)
+    third_task = NoOpTask("Third Task")
+    third_task.execute = MagicMock(wraps=third_task.execute)
+    third_task.get_results = MagicMock(wraps=third_task.get_results)
 
-    tasks = TaskGraph({first_task: [],
-                       second_task: [first_task],
-                       third_task: [second_task]}, {}, {})
-    manager = Mock()
+    manager.configure_mock(fte=first_task.execute,
+                           ftr=first_task.get_results,
+                           tte=third_task.execute,
+                           ttr=third_task.get_results,
+                           ste=second_task.execute,
+                           str=second_task.get_results)
 
-    manager.first_task = first_task
-    manager.second_task = second_task
-    manager.third_task = third_task
+    tasks = TaskGraph({first_task: {},
+                       second_task: {first_task},
+                       third_task: {second_task}}, {}, {})
 
     expected_calls = [
-        call.first_task.execute([]),
-        call.first_task.get_results([]),
-        call.second_task.execute([]),
-        call.second_task.get_results([]),
-        call.third_task.execute([]),
-        call.third_task.get_results([])
+        call.fte([]),
+        call.ftr([]),
+        call.ste([]),
+        call.str([]),
+        call.tte([]),
+        call.ttr([])
     ]
     re = RunEngine({})
 
     re(decision_engine_plan(tasks))
-
-    while re.state != 'idle':
-        print("sleep")
-        sleep(0.1)
 
     for expected_call in expected_calls:
         assert expected_call in manager.mock_calls
@@ -68,28 +67,37 @@ def test_order_of_tasks():
 
 
 def test_graph_dependencies_depends():
-    first_task = mock_task(name="First Task")
-    second_task = mock_task(name="Second Task")
-    third_task = mock_task(name="Third Task")
+    manager = MagicMock()
+    first_task = NoOpTask("First Task")
+    first_task.execute = MagicMock(wraps=first_task.execute)
+    first_task.get_results = MagicMock(wraps=first_task.get_results)
+    second_task = NoOpTask("Second Task")
+    second_task.execute = MagicMock(wraps=second_task.execute)
+    second_task.get_results = MagicMock(wraps=second_task.get_results)
+    third_task = NoOpTask("Third Task")
+    third_task.execute = MagicMock(wraps=third_task.execute)
+    third_task.get_results = MagicMock(wraps=third_task.get_results)
 
-    tasks = TaskGraph({second_task: [], third_task: [second_task]}, {}, {})
-    tasks = tasks.depends_on(TaskGraph({first_task: []}, {}, {}))
+    manager.configure_mock(fte=first_task.execute,
+                           ftr=first_task.get_results,
+                           tte=third_task.execute,
+                           ttr=third_task.get_results,
+                           ste=second_task.execute,
+                           str=second_task.get_results)
+
+    tasks = TaskGraph({second_task: {}, third_task: {second_task}}, {}, {})
+    tasks = tasks.depends_on(TaskGraph({first_task: set()}, {}, {}))
 
     for task in second_task, third_task:
         assert first_task in tasks.graph[task]
-    manager = Mock()
-
-    manager.first_task = first_task
-    manager.second_task = second_task
-    manager.third_task = third_task
 
     expected_calls = [
-        call.first_task.execute([]),
-        call.first_task.get_results([]),
-        call.second_task.execute([]),
-        call.second_task.get_results([]),
-        call.third_task.execute([]),
-        call.third_task.get_results([])
+        call.fte([]),
+        call.ftr([]),
+        call.ste([]),
+        call.str([]),
+        call.tte([]),
+        call.ttr([])
     ]
     re = RunEngine({})
 
@@ -103,28 +111,37 @@ def test_graph_dependencies_depends():
 
 
 def test_graph_dependencies_dependant():
-    first_task = mock_task(name="First Task")
-    second_task = mock_task(name="Second Task")
-    third_task = mock_task(name="Third Task")
+    manager = MagicMock()
+    first_task = NoOpTask("First Task")
+    first_task.execute = MagicMock(wraps=first_task.execute)
+    first_task.get_results = MagicMock(wraps=first_task.get_results)
+    second_task = NoOpTask("Second Task")
+    second_task.execute = MagicMock(wraps=second_task.execute)
+    second_task.get_results = MagicMock(wraps=second_task.get_results)
+    third_task = NoOpTask("Third Task")
+    third_task.execute = MagicMock(wraps=third_task.execute)
+    third_task.get_results = MagicMock(wraps=third_task.get_results)
 
-    tasks = TaskGraph({first_task: [], second_task: [first_task]}, {}, {})
-    tasks = tasks.is_depended_on_by(TaskGraph({third_task: []}, {}, {}))
+    manager.configure_mock(fte=first_task.execute,
+                           ftr=first_task.get_results,
+                           tte=third_task.execute,
+                           ttr=third_task.get_results,
+                           ste=second_task.execute,
+                           str=second_task.get_results)
+
+    tasks = TaskGraph({first_task: {}, second_task: {first_task}}, {}, {})
+    tasks = tasks.is_depended_on_by(TaskGraph({third_task: set()}, {}, {}))
 
     for task in second_task, third_task:
         assert first_task in tasks.graph[task]
-    manager = Mock()
-
-    manager.first_task = first_task
-    manager.second_task = second_task
-    manager.third_task = third_task
 
     expected_calls = [
-        call.first_task.execute([]),
-        call.first_task.get_results([]),
-        call.second_task.execute([]),
-        call.second_task.get_results([]),
-        call.third_task.execute([]),
-        call.third_task.get_results([])
+        call.fte([]),
+        call.ftr([]),
+        call.ste([]),
+        call.str([]),
+        call.tte([]),
+        call.ttr([])
     ]
     re = RunEngine({})
 
@@ -139,60 +156,46 @@ def test_graph_dependencies_dependant():
 
 
 def test_graph_runs_tasks_concurrent():
-    slow_task = mock_task(SetTask("Set slow moving device"))
-    fast_task = mock_task(SetTask("Set fast moving device"))
-    after_slow = mock_task(name="After slow movement")
-    after_fast = mock_task(name="After fast movement")
+    slow_task = SetTask("Set slow moving device")
+    slow_task.get_results = MagicMock(wraps=slow_task.get_results)
+    fast_task = SetTask("Set fast moving device")
+    fast_task.get_results = MagicMock(wraps=fast_task.get_results)
+
+    after_slow = NoOpTask(name="After slow movement")
+    after_slow.execute = MagicMock(wraps=after_slow.execute)
+    after_slow.get_results = MagicMock(wraps=after_slow.get_results)
+    after_fast = NoOpTask(name="After fast movement")
+    after_fast.execute = MagicMock(wraps=after_fast.execute)
+    after_fast.get_results = MagicMock(wraps=after_fast.get_results)
 
     slow_device = SynAxis(name="Slow Device", delay=3)
     fast_device = SynAxis(name="Fast Device", delay=0.5)
     location = 7
 
-    def slow_move(device: Device, value: Any,
-                  group: Optional[str] = None) -> PlanOutput:
-        ret: Optional[Status] = yield from abs_set(device, value,
-                                                   group=group or slow_task.name)
-        # The wait is a success if the set was a success
-        ret.add_callback(slow_task.propagate_status)
-        return slow_task._status
-
-    def fast_move(device: Device, value: Any,
-                  group: Optional[str] = None) -> PlanOutput:
-        ret: Optional[Status] = yield from abs_set(device, value,
-                                                   group=group or fast_task.name)
-        # The wait is a success if the set was a success
-        ret.add_callback(fast_task.propagate_status)
-        return fast_task._status
-
-    # Run the actual set behaviour,
-    #   which sets a status to done only once the move is complete
-    slow_task._run_task.side_effect = slow_move
-    fast_task._run_task.side_effect = fast_move
-
-    tasks = TaskGraph({slow_task: [],
-                       fast_task: [],
-                       after_slow: [slow_task],
-                       after_fast: [fast_task]},
+    tasks = TaskGraph({slow_task: {},
+                       fast_task: {},
+                       after_slow: {slow_task},
+                       after_fast: {fast_task}},
                       {slow_task: ["slow device", "location"],
                        fast_task: ["fast device", "location"]},
                       {})
 
     manager = Mock()
+    # Cannot guarantee order of starting fast, slow task
+    manager.configure_mock(ftr=fast_task.get_results,
+                           afte=after_fast.execute,
+                           aftr=after_fast.get_results,
+                           ttr=slow_task.get_results,
+                           ste=after_slow.execute,
+                           str=after_slow.get_results)
 
-    manager.slow_task = slow_task
-    manager.fast_task = fast_task
-    manager.after_slow = after_slow
-    manager.after_fast = after_fast
-
-    # Cannot guarantee order of slow task and fast task beginning, but only want to
-    # guarantee that after-fast runs before slow finishes
     expected_calls = [
-        call.slow_task.execute([slow_device, location]),
-        call.after_fast.execute([]),
-        call.after_fast.get_results([]),
-        call.slow_task.get_results([]),
-        call.after_slow.execute([]),
-        call.after_slow.get_results([])
+        call.ftr([]),
+        call.afte([]),
+        call.aftr([]),
+        call.ttr([]),
+        call.ste([]),
+        call.str([])
     ]
     re = RunEngine({})
 
