@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>How to construct a Task &mdash; bluesky_taskgraph_runner 0.0.1.pre+19.g6eb783d documentation</title>
+      <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="../_static/graphviz.css" type="text/css" />
+      <link rel="stylesheet" href="../_static/theme_overrides.css" type="text/css" />
+    <link rel="shortcut icon" href="../_static/dls-favicon.ico"/>
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+        <script src="../_static/jquery.js"></script>
+        <script src="../_static/underscore.js"></script>
+        <script src="../_static/doctools.js"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="How to construct a TaskGraph" href="construct-a-taskgraph.html" />
+    <link rel="prev" title="Constructing a ControlObject" href="construct-a-control-object.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search"  style="background: rgb(7, 43, 93)" >
+            <a href="../index.html" class="icon icon-home"> bluesky_taskgraph_runner
+            <img src="../_static/dls-logo.svg" class="logo" alt="Logo"/>
+          </a>
+              <div class="version">
+                master
+              </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Tutorials</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../tutorials/installation.html">Installation</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">How-to Guides</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="construct-a-control-object.html">Constructing a ControlObject</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">How to construct a Task</a></li>
+<li class="toctree-l1"><a class="reference internal" href="#how-big-should-a-task-be">How big should a task be?</a></li>
+<li class="toctree-l1"><a class="reference internal" href="#optional-and-conditional-tasks">Optional and Conditional Tasks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="#task-argument-ordering">Task argument ordering</a></li>
+<li class="toctree-l1"><a class="reference internal" href="construct-a-taskgraph.html">How to construct a TaskGraph</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Explanations</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../explanations/task-in-out.html">Why are Task in/out names defined by the TaskGraph?</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../reference/contributing.html">Contributing</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/DiamondLightSource/python-bluesky-taskgraph/releases">Releases</a></li>
+<li class="toctree-l1"><a class="reference external" href="genindex.html#http://">Index</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu"  style="background: rgb(7, 43, 93)" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">bluesky_taskgraph_runner</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home"></a> &raquo;</li>
+      <li>How to construct a Task</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/how-to/construct-a-task.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="how-to-construct-a-task">
+<h1>How to construct a Task<a class="headerlink" href="#how-to-construct-a-task" title="Permalink to this headline"></a></h1>
+<p>A Task should extend BlueskyTask and overwrite BlueskyTask._run_task, unless finer control over the Status of the task
+is required, in which case BlueskyTask.execute may be overwritten instead. The Status of the task- constructed by
+execute()- should only be marked complete or failed when the task has complete: the plan stub task_callback is provided
+and passes BlueskyTask.propagate_status as a callback to a Status constructed from the Statuses of any long running
+operation monitored by the RunEngine, with the appropriate group.
+The Task may instead set up an async call to monitor a subscription, construct a Status to complete when one of many
+parallel tasks complete etc.: in each case, the _run_task method’s final operation should yield a Msg.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># A Bad plan: the status of the task is assumed to be done almost as soon as the move is begun, and the the second</span>
+<span class="c1">#  read is unlikely to be at the end of the movement:</span>
+<span class="k">def</span> <span class="nf">_run_task</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">slow_moving_device</span><span class="p">:</span> <span class="n">Device</span><span class="p">,</span> <span class="n">distant_location</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">PlanOutput</span><span class="p">:</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">add_result</span><span class="p">(</span><span class="n">read_device</span><span class="p">(</span><span class="n">slow_moving_device</span><span class="p">))</span>  <span class="c1"># Read initial location</span>
+    <span class="k">yield from</span> <span class="n">abs_set</span><span class="p">(</span><span class="n">slow_moving_device</span><span class="p">,</span> <span class="n">distant_location</span><span class="p">)</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">add_result</span><span class="p">(</span><span class="n">read_device</span><span class="p">(</span><span class="n">slow_moving_device</span><span class="p">))</span>  <span class="c1"># Read final location</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">_status</span><span class="o">.</span><span class="n">set_finished</span><span class="p">()</span>
+    <span class="k">yield</span> <span class="n">Msg</span><span class="p">(</span><span class="s1">&#39;null&#39;</span><span class="p">)</span>
+
+<span class="sd">&#39;&#39;&#39;&#39;&#39;&#39;</span>
+
+<span class="c1"># The same plan but with consideration taken for long running movements</span>
+<span class="k">def</span> <span class="nf">_run_task</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">slow_moving_device</span><span class="p">:</span> <span class="n">Device</span><span class="p">,</span> <span class="n">distant_location</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">PlanOutput</span><span class="p">:</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">add_result</span><span class="p">(</span><span class="n">read_device</span><span class="p">(</span><span class="n">slow_moving_device</span><span class="p">))</span>  <span class="c1"># Read initial location</span>
+    <span class="k">yield from</span> <span class="n">abs_set</span><span class="p">(</span><span class="n">slow_moving_device</span><span class="p">,</span> <span class="n">distant_location</span><span class="p">,</span> <span class="n">group</span><span class="o">=</span><span class="s2">&quot;slow movement&quot;</span><span class="p">)</span>
+    <span class="k">yield from</span> <span class="n">task_callback</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">group</span><span class="o">=</span><span class="s2">&quot;slow movement&quot;</span><span class="p">)</span>
+
+<span class="k">def</span> <span class="nf">propagate_status</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">status</span><span class="p">:</span> <span class="n">DeviceStatus</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="c1"># Status is complete so shouldn&#39;t need a timeout?</span>
+    <span class="n">exception</span> <span class="o">=</span> <span class="n">status</span><span class="o">.</span><span class="n">exception</span><span class="p">(</span><span class="kc">None</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">exception</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_status</span><span class="o">.</span><span class="n">set_exception</span><span class="p">(</span><span class="n">exception</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">add_result</span><span class="p">(</span><span class="n">read_device</span><span class="p">(</span><span class="n">status</span><span class="o">.</span><span class="n">device</span><span class="p">))</span>  <span class="c1"># Read final location</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_status</span><span class="o">.</span><span class="n">set_finished</span><span class="p">()</span>  <span class="c1"># Mark status complete when move is complete and all results available</span>
+</pre></div>
+</div>
+</section>
+<section id="how-big-should-a-task-be">
+<h1>How big should a task be?<a class="headerlink" href="#how-big-should-a-task-be" title="Permalink to this headline"></a></h1>
+<p>A Task should be a behavioural chunk of operations: it may make sense to have a task that is a single operation e.g.
+moving a single device, if the Task is appropriately named to show what behaviour it enables: e.g. “Move Devices Out of
+Beam”, where devices is a single device, but knowing that devices are out of the beam enabled a future behaviour.
+Tasks need not be constrained by what can be run concurrently: RunEngine waits should be used to orchestrate parallelism
+within tasks.</p>
+<blockquote>
+<div><p>Moving motorA and motorB consecutively as concurrent motion dangerous, to enable behaviour of “resetting all motors”
+-&gt; Same task, with Bluesky wait plans to ensure motors not moving concurrently</p>
+<p>Moving motorA while concurrently setting up file systems -&gt; Non-dependent tasks</p>
+<p>Moving motorA to reset position explicitly prior to moving detector into position -&gt; Dependent tasks</p>
+</div></blockquote>
+</section>
+<section id="optional-and-conditional-tasks">
+<h1>Optional and Conditional Tasks<a class="headerlink" href="#optional-and-conditional-tasks" title="Permalink to this headline"></a></h1>
+<p>Tasks that are optional based on initial conditions (such as tasks that are run during the first run after an interlock
+is enabled) may be conditionally added to the TaskGraph by its constructing ControlObject, or else may be wrapped in an
+ConditionalTask. ConditionalTask takes an optional second task, for constructing a choice of one task or another:
+ConditionalTasks, regardless of which behaviour is being enabled, should be approached with considerable caution with
+regards to what is available as output after they have been run: as outputs are gathered by zipping with the names, and
+this truncates to the shorter of the lists, optional tasks are not required to return anything, in which case the
+arguments they output should already be available from prior tasks (with dependencies ensuring they are prior) or else
+in initial conditions.</p>
+</section>
+<section id="task-argument-ordering">
+<h1>Task argument ordering<a class="headerlink" href="#task-argument-ordering" title="Permalink to this headline"></a></h1>
+<dl class="simple">
+<dt>Task input arguments should prioritise</dt><dd><p>primarily: Devices
+secondarily: beamline configuration
+then: all other arguments</p>
+</dd>
+</dl>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="construct-a-control-object.html" class="btn btn-neutral float-left" title="Constructing a ControlObject" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="construct-a-taskgraph.html" class="btn btn-neutral float-right" title="How to construct a TaskGraph" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p></p>
+  </div>
+
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+   
+  <div id="other-versions-div" class="rst-versions" data-toggle="rst-versions" role="note" aria-label="Versions" style="visibility: hidden">
+    <span class="rst-current-version" data-toggle="rst-current-version">
+      <span class="fa fa-book"> Other Versions</span>
+      master
+      <span class="fa fa-caret-down"></span>
+    </span>
+    <div class="rst-other-versions">
+      <dl id="other-versions-dl"/>
+    </div>
+  </div>
+  <script>
+    function addVersion(name) {
+      var dd = document.createElement("dd");
+      var a = document.createElement("a");
+      a.href = "../../" + name;
+      a.innerText = name;
+      dd.appendChild(a);
+      document.getElementById('other-versions-dl').appendChild(dd);
+    }
+    // Get versions.txt and add a version for each line
+    fetch("../../versions.txt").then(response => {
+      if (response.ok) {
+        document.getElementById('other-versions-div').style.visibility = "visible";
+        return response.text().then(text => text.split(/\r?\n/).forEach(addVersion))
+      }
+    });
+  </script>
+
+
+</body>
+</html>
