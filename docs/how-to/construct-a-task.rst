@@ -39,7 +39,7 @@ parallel tasks complete etc.: in each case, the _run_task method's final operati
 
 
 How big should a task be?
-========================
+=========================
 
 A Task should be a behavioural chunk of operations: it may make sense to have a task that is a single operation e.g.
 moving a single device, if the Task is appropriately named to show what behaviour it enables: e.g. "Move Devices Out of
@@ -56,7 +56,7 @@ within tasks.
 
 
 Optional and Conditional Tasks
-========================
+==============================
 
 Tasks that are optional based on initial conditions (such as tasks that are run during the first run after an interlock
 is enabled) may be conditionally added to the TaskGraph by its constructing ControlObject, or else may be wrapped in an
