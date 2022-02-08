@@ -19,13 +19,11 @@ class DecisionEngineKnownException(Exception):
 
 
 class TaskStop(DecisionEngineKnownException):
-
     def __init__(self):
         super().__init__(False)
 
 
 class TaskFail(DecisionEngineKnownException):
-
     def __init__(self):
         super().__init__(True)
 
@@ -87,8 +85,9 @@ class BlueskyTask(Generic[InputType]):
         else:
             self.status.set_finished()
 
-    def _add_callback_or_complete(self, status: Optional[Status]) \
-            -> Generator[Msg, None, None]:
+    def _add_callback_or_complete(
+        self, status: Optional[Status]
+    ) -> Generator[Msg, None, None]:
         if status:
             status.add_callback(self.propagate_status)
         else:
@@ -123,7 +122,7 @@ class BlueskyTask(Generic[InputType]):
         return self.status
 
     @abstractmethod
-    def organise_inputs(self, *args) -> InputType:
+    def organise_inputs(self, *args: Any) -> InputType:
         ...
 
     @abstractmethod

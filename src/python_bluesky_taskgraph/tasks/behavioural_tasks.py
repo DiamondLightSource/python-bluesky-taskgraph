@@ -13,7 +13,6 @@ def read_device(device: Device):
 
 
 class NoOpTask(BlueskyTask[EmptyInput]):
-
     def organise_inputs(self, *args) -> EmptyInput:
         return EmptyInput()
 
@@ -21,7 +20,7 @@ class NoOpTask(BlueskyTask[EmptyInput]):
         yield from self._add_callback_or_complete(None)
 
 
-class ConditionalTask(BlueskyTask['ConditionalTask.ConditionalInputs']):
+class ConditionalTask(BlueskyTask["ConditionalTask.ConditionalInputs"]):
     """
     Task with a condition based upon its arguments that can be resolved into a
     boolean of whether the task should run through one Plan or another/be skipped,
@@ -33,23 +32,28 @@ class ConditionalTask(BlueskyTask['ConditionalTask.ConditionalInputs']):
     any of its values, so any outputs provided by this task should be considered
     optional or unchanged from initial conditions.
     """
-    ConditionalType = TypeVar('ConditionalType', bound=Input)
-    FirstInputs = TypeVar('FirstInputs', bound=Input)
-    SecondInputs = TypeVar('SecondInputs', bound=Input)
+
+    ConditionalType = TypeVar("ConditionalType", bound=Input)
+    FirstInputs = TypeVar("FirstInputs", bound=Input)
+    SecondInputs = TypeVar("SecondInputs", bound=Input)
 
     @dataclass
-    class ConditionalInputs(Input,
-                            Generic[ConditionalType, FirstInputs, SecondInputs]):
-        condition_inputs: 'ConditionalTask.ConditionalType'
-        first_inputs: 'ConditionalTask.FirstInputs'
-        second_inputs: 'ConditionalTask.SecondInputs'
+    class ConditionalInputs(Input, Generic[ConditionalType, FirstInputs, SecondInputs]):
+        condition_inputs: "ConditionalTask.ConditionalType"
+        first_inputs: "ConditionalTask.FirstInputs"
+        second_inputs: "ConditionalTask.SecondInputs"
 
-    def __init__(self, name: str, first_task: BlueskyTask[FirstInputs],
-                 second_task: BlueskyTask[SecondInputs] = None):
+    def __init__(
+        self,
+        name: str,
+        first_task: BlueskyTask[FirstInputs],
+        second_task: BlueskyTask[SecondInputs] = None,
+    ):
         super().__init__(name)
         self._first_task: BlueskyTask = first_task
-        self._second_task: BlueskyTask = second_task \
-            or NoOpTask(f"{first_task.name} skipped!")
+        self._second_task: BlueskyTask = second_task or NoOpTask(
+            f"{first_task.name} skipped!"
+        )
 
     def organise_inputs(self, *args) -> ConditionalInputs:
         return ConditionalTask.ConditionalInputs(*args)
@@ -69,7 +73,8 @@ class ConditionalTask(BlueskyTask['ConditionalTask.ConditionalInputs']):
         task = self._first_task if condition else self._second_task
         args = inputs.first_inputs if condition else inputs.second_inputs
         self._logger.info(
-            f"Condition was {condition}: running {task.name} with args {args}")
+            f"Condition was {condition}: running {task.name} with args {args}"
+        )
         # Track the state of the plan we choose to run
         task.add_complete_callback(self.propagate_status)
         yield from task.execute(args)

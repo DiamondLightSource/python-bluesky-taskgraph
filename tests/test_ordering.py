@@ -8,7 +8,7 @@ from python_bluesky_taskgraph.core.task_graph import TaskGraph
 from python_bluesky_taskgraph.tasks.behavioural_tasks import NoOpTask
 from python_bluesky_taskgraph.tasks.stub_tasks import SetTask
 
-'''
+"""
 Suggested method of composing tasks:
 final_tasks = get_final_tasks()
 penultimate_tasks = get_penultimate_tasks()
@@ -21,7 +21,7 @@ tasks = final_tasks.depends_on(penultimate_tasks).[...]
   or
     tasks = first_tasks.are_dependent_on(second_tasks)...
 
-'''
+"""
 
 
 def test_order_of_tasks():
@@ -36,16 +36,18 @@ def test_order_of_tasks():
     third_task.execute = MagicMock(wraps=third_task.execute)
     third_task.get_results = MagicMock(wraps=third_task.get_results)
 
-    manager.configure_mock(fte=first_task.execute,
-                           ftr=first_task.get_results,
-                           tte=third_task.execute,
-                           ttr=third_task.get_results,
-                           ste=second_task.execute,
-                           str=second_task.get_results)
+    manager.configure_mock(
+        fte=first_task.execute,
+        ftr=first_task.get_results,
+        tte=third_task.execute,
+        ttr=third_task.get_results,
+        ste=second_task.execute,
+        str=second_task.get_results,
+    )
 
-    tasks = TaskGraph({first_task: {},
-                       second_task: {first_task},
-                       third_task: {second_task}}, {}, {})
+    tasks = TaskGraph(
+        {first_task: {}, second_task: {first_task}, third_task: {second_task}}, {}, {}
+    )
 
     expected_calls = [
         call.fte([]),
@@ -53,7 +55,7 @@ def test_order_of_tasks():
         call.ste([]),
         call.str([]),
         call.tte([]),
-        call.ttr([])
+        call.ttr([]),
     ]
     re = RunEngine({})
 
@@ -63,7 +65,7 @@ def test_order_of_tasks():
         assert expected_call in manager.mock_calls
 
     method_calls = [calls for calls in manager.method_calls if calls in expected_calls]
-    assert (method_calls == expected_calls)
+    assert method_calls == expected_calls
 
 
 def test_graph_dependencies_depends():
@@ -78,12 +80,14 @@ def test_graph_dependencies_depends():
     third_task.execute = MagicMock(wraps=third_task.execute)
     third_task.get_results = MagicMock(wraps=third_task.get_results)
 
-    manager.configure_mock(fte=first_task.execute,
-                           ftr=first_task.get_results,
-                           tte=third_task.execute,
-                           ttr=third_task.get_results,
-                           ste=second_task.execute,
-                           str=second_task.get_results)
+    manager.configure_mock(
+        fte=first_task.execute,
+        ftr=first_task.get_results,
+        tte=third_task.execute,
+        ttr=third_task.get_results,
+        ste=second_task.execute,
+        str=second_task.get_results,
+    )
 
     tasks = TaskGraph({second_task: {}, third_task: {second_task}}, {}, {})
     tasks = tasks.depends_on(TaskGraph({first_task: set()}, {}, {}))
@@ -97,7 +101,7 @@ def test_graph_dependencies_depends():
         call.ste([]),
         call.str([]),
         call.tte([]),
-        call.ttr([])
+        call.ttr([]),
     ]
     re = RunEngine({})
 
@@ -107,7 +111,7 @@ def test_graph_dependencies_depends():
         assert expected_call in manager.mock_calls
 
     method_calls = [calls for calls in manager.method_calls if calls in expected_calls]
-    assert (method_calls == expected_calls)
+    assert method_calls == expected_calls
 
 
 def test_graph_dependencies_dependant():
@@ -122,12 +126,14 @@ def test_graph_dependencies_dependant():
     third_task.execute = MagicMock(wraps=third_task.execute)
     third_task.get_results = MagicMock(wraps=third_task.get_results)
 
-    manager.configure_mock(fte=first_task.execute,
-                           ftr=first_task.get_results,
-                           tte=third_task.execute,
-                           ttr=third_task.get_results,
-                           ste=second_task.execute,
-                           str=second_task.get_results)
+    manager.configure_mock(
+        fte=first_task.execute,
+        ftr=first_task.get_results,
+        tte=third_task.execute,
+        ttr=third_task.get_results,
+        ste=second_task.execute,
+        str=second_task.get_results,
+    )
 
     tasks = TaskGraph({first_task: {}, second_task: {first_task}}, {}, {})
     tasks = tasks.is_depended_on_by(TaskGraph({third_task: set()}, {}, {}))
@@ -141,7 +147,7 @@ def test_graph_dependencies_dependant():
         call.ste([]),
         call.str([]),
         call.tte([]),
-        call.ttr([])
+        call.ttr([]),
     ]
     re = RunEngine({})
 
@@ -152,7 +158,7 @@ def test_graph_dependencies_dependant():
         assert expected_call in manager.mock_calls
 
     method_calls = [calls for calls in manager.method_calls if calls in expected_calls]
-    assert (method_calls == expected_calls)
+    assert method_calls == expected_calls
 
 
 def test_graph_runs_tasks_concurrent():
@@ -172,22 +178,30 @@ def test_graph_runs_tasks_concurrent():
     fast_device = SynAxis(name="Fast Device", delay=0.5)
     location = 7
 
-    tasks = TaskGraph({slow_task: {},
-                       fast_task: {},
-                       after_slow: {slow_task},
-                       after_fast: {fast_task}},
-                      {slow_task: ["slow device", "location"],
-                       fast_task: ["fast device", "location"]},
-                      {})
+    tasks = TaskGraph(
+        {
+            slow_task: {},
+            fast_task: {},
+            after_slow: {slow_task},
+            after_fast: {fast_task},
+        },
+        {
+            slow_task: ["slow device", "location"],
+            fast_task: ["fast device", "location"],
+        },
+        {},
+    )
 
     manager = Mock()
     # Cannot guarantee order of starting fast, slow task
-    manager.configure_mock(ftr=fast_task.get_results,
-                           afte=after_fast.execute,
-                           aftr=after_fast.get_results,
-                           ttr=slow_task.get_results,
-                           ste=after_slow.execute,
-                           str=after_slow.get_results)
+    manager.configure_mock(
+        ftr=fast_task.get_results,
+        afte=after_fast.execute,
+        aftr=after_fast.get_results,
+        ttr=slow_task.get_results,
+        ste=after_slow.execute,
+        str=after_slow.get_results,
+    )
 
     expected_calls = [
         call.ftr([]),
@@ -195,17 +209,23 @@ def test_graph_runs_tasks_concurrent():
         call.aftr([]),
         call.ttr([]),
         call.ste([]),
-        call.str([])
+        call.str([]),
     ]
     re = RunEngine({})
 
-    re(decision_engine_plan(tasks,
-                            {"slow device": slow_device,
-                             "fast device": fast_device,
-                             "location": location}))
+    re(
+        decision_engine_plan(
+            tasks,
+            {
+                "slow device": slow_device,
+                "fast device": fast_device,
+                "location": location,
+            },
+        )
+    )
 
     for expected_call in expected_calls:
         assert expected_call in manager.mock_calls
 
     method_calls = [calls for calls in manager.method_calls if calls in expected_calls]
-    assert (method_calls == expected_calls)
+    assert method_calls == expected_calls

@@ -8,6 +8,7 @@ python_bluesky_taskgraph = {editable = true, extras = ["dev"], path = "."}
 
 [packages]
 python_bluesky_taskgraph = {editable = true, path = "."}
+black = "*"
 
 [scripts]
 lint = "pre-commit run --all-files --show-diff-on-failure --color=always -v"

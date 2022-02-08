@@ -15,7 +15,6 @@ from python_bluesky_taskgraph.tasks.stub_tasks import SetTask
 
 
 class FailingDevice(SynAxis):
-
     def __init__(self, name, fatal_exception=False):
         super().__init__(name=name, delay=3)
         self.exception = TaskFail if fatal_exception else TaskStop
@@ -27,7 +26,6 @@ class FailingDevice(SynAxis):
 
 
 class FailingDecisionEngineControlObject(DecisionEngineControlObject):
-
     def __init__(self, run_engine: RunEngine, known_values: Dict[str, Any] = None):
         super().__init__(run_engine=run_engine, known_values=known_values)
         self._count = Signal(name="Run tasks 5 times at most")
@@ -44,12 +42,19 @@ class FailingDecisionEngineControlObject(DecisionEngineControlObject):
         failing_task = RecoveringFromNonFatalExceptionSetTask("Failing Task")
         future_task = SetTask("Future task")
 
-        return TaskGraph({prior_task: set(),
-                          failing_task: {prior_task},
-                          future_task: {failing_task}},
-                         {failing_task: ["second_device", "value"],
-                          prior_task: ["first_device", "value"],
-                          future_task: ["third_device", "value"]}, {})
+        return TaskGraph(
+            {
+                prior_task: set(),
+                failing_task: {prior_task},
+                future_task: {failing_task},
+            },
+            {
+                failing_task: ["second_device", "value"],
+                prior_task: ["first_device", "value"],
+                future_task: ["third_device", "value"],
+            },
+            {},
+        )
 
 
 class RecoveringFromNonFatalExceptionSetTask(SetTask):
@@ -114,17 +119,21 @@ def test_no_exception_to_completion():
     first_device = mock_device(name="First device")
     second_device = mock_device(name="Second device")
     third_device = mock_device(name="Third device")
-    control = FailingDecisionEngineControlObject(re,
-                                                 known_values={
-                                                     "first_device": first_device,
-                                                     "second_device": second_device,
-                                                     "third_device": third_device,
-                                                     "value": 7})
+    control = FailingDecisionEngineControlObject(
+        re,
+        known_values={
+            "first_device": first_device,
+            "second_device": second_device,
+            "third_device": third_device,
+            "value": 7,
+        },
+    )
     control.run_task_graphs()
 
     expected_calls = [call.set(7)] * 5
 
     for device in [first_device, second_device, third_device]:
-        filtered_calls = [calls for calls in device.mock_calls
-                          if calls in expected_calls]
-        assert (filtered_calls == expected_calls)
+        filtered_calls = [
+            calls for calls in device.mock_calls if calls in expected_calls
+        ]
+        assert filtered_calls == expected_calls

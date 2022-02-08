@@ -1,18 +1,18 @@
 from abc import ABC
 from dataclasses import dataclass, field
-from typing import Any, Callable, Dict, Generator, Generic, List, Optional
+from typing import Any, Callable, Dict, Generator, List, Optional
 
 from bluesky import Msg
 from bluesky.plan_stubs import create, read, save
 from bluesky.protocols import Status
-from ophyd import Device, DeviceStatus
+from ophyd import DeviceStatus
 
 from python_bluesky_taskgraph.core.task import BlueskyTask
 from python_bluesky_taskgraph.core.types import Devices, Input, InputType, TaskOutput
 from python_bluesky_taskgraph.tasks.behavioural_tasks import read_device
 
 
-class DeviceCallbackTask(Generic[InputType], BlueskyTask[InputType], ABC):
+class DeviceCallbackTask(BlueskyTask[InputType], ABC):
     """
     Utility Task to define a task that waits for a Device to finish and adds its final
     value as a result
@@ -28,16 +28,6 @@ class DeviceCallbackTask(Generic[InputType], BlueskyTask[InputType], ABC):
         #  DeviceStatus?
 
 
-class DeviceTask(Generic[InputType], DeviceCallbackTask[InputType], ABC):
-    """
-    Utility Task to define a task instantiated with a device
-    """
-
-    def __init__(self, name: str, device: Device):
-        super().__init__(name)
-        self._device = device
-
-
 class ReadBeamlineState(BlueskyTask[Devices]):
     """
     TODO: Is this the right way to do this?
@@ -47,11 +37,11 @@ class ReadBeamlineState(BlueskyTask[Devices]):
     So we can track the beamline state over multiple tasks/runs
     """
 
-    def organise_inputs(self, *args) -> Devices:
-        return Devices(*args)
-
     def __init__(self):
         super().__init__("Reading Beamline state")
+
+    def organise_inputs(self, *args) -> Devices:
+        return Devices(*args)
 
     def _run_task(self, devices: Devices) -> TaskOutput:
         yield from create(name="beamline_state")
@@ -61,7 +51,7 @@ class ReadBeamlineState(BlueskyTask[Devices]):
         yield from self._add_callback_or_complete(None)
 
 
-class PlanTask(BlueskyTask['PlanTask.PlanInputs']):
+class PlanTask(BlueskyTask["PlanTask.PlanInputs"]):
     """
     TODO: Is there a better way to do this kind of task?
     Task that yields all instructions from a pre-existing plan or plan stub.

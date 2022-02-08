@@ -8,8 +8,10 @@ Output = Dict[BlueskyTask, List[str]]
 
 
 def _format_task(task, dependencies, inputs, outputs):
-    return f"{task.name}: depends on: {dependencies}, " \
-           f"has inputs: {inputs}, has outputs: {outputs}"
+    return (
+        f"{task.name}: depends on: {dependencies}, "
+        f"has inputs: {inputs}, has outputs: {outputs}"
+    )
 
 
 # TODO: Likely other useful inbuilt methods to override
@@ -28,22 +30,26 @@ class TaskGraph:
         self.inputs = dict(inputs)
         self.outputs = dict(outputs)
 
-    def __add__(self, other: 'TaskGraph') -> 'TaskGraph':
-        return TaskGraph({**self.graph, **other.graph},
-                         {**self.inputs, **other.inputs},
-                         {**self.outputs, **other.outputs})
+    def __add__(self, other: "TaskGraph") -> "TaskGraph":
+        return TaskGraph(
+            {**self.graph, **other.graph},
+            {**self.inputs, **other.inputs},
+            {**self.outputs, **other.outputs},
+        )
 
-    def __radd__(self, other: 'TaskGraph') -> 'TaskGraph':
+    def __radd__(self, other: "TaskGraph") -> "TaskGraph":
         return self.__add__(other)
 
     def __str__(self) -> str:
         tasks = self.graph.keys()
-        dependencies = ([dependency.name for dependency in self.graph.get(key, [])] for
-                        key in tasks)
+        dependencies = (
+            [dependency.name for dependency in self.graph.get(key, [])] for key in tasks
+        )
         inputs = (self.inputs.get(key, []) for key in tasks)
         outputs = (self.outputs.get(key, []) for key in tasks)
         return str(
-            [_format_task(*task) for task in zip(tasks, dependencies, inputs, outputs)])
+            [_format_task(*task) for task in zip(tasks, dependencies, inputs, outputs)]
+        )
 
     def __len__(self) -> int:
         return len(self.graph)
@@ -55,7 +61,7 @@ class TaskGraph:
     Returns the combined graph to allow chaining of this method
     """
 
-    def depends_on(self, other: 'TaskGraph') -> 'TaskGraph':
+    def depends_on(self, other: "TaskGraph") -> "TaskGraph":
         new_dependencies = set(other.graph.keys())
         for _, dependencies in self.graph.items():
             dependencies.update(new_dependencies)
@@ -68,5 +74,5 @@ class TaskGraph:
     Returns the combined graph to allow chaining of this method
     """
 
-    def is_depended_on_by(self, other: 'TaskGraph') -> 'TaskGraph':
+    def is_depended_on_by(self, other: "TaskGraph") -> "TaskGraph":
         return other.depends_on(self)

@@ -39,4 +39,4 @@ class SetInputs(Input):
     kwargs: Dict[str, Any] = field(default_factory=dict)
 
 
-InputType = TypeVar('InputType', bound=Input)
+InputType = TypeVar("InputType", bound=Input)

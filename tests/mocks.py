@@ -1,9 +1,13 @@
+from dataclasses import dataclass
+from typing import Generator
 from unittest.mock import MagicMock, PropertyMock
 
+from bluesky import Msg
 from ophyd import Device
 from ophyd.sim import SynAxis
 
 from python_bluesky_taskgraph.core.task import BlueskyTask
+from python_bluesky_taskgraph.core.types import Input
 from python_bluesky_taskgraph.tasks.behavioural_tasks import NoOpTask
 
 
@@ -26,3 +30,50 @@ def mock_device(wrapped_device: Device = None, name: str = "Mock Device") -> Dev
     device.read = MagicMock(wraps=wrapped_device.read)
     device.name = name or wrapped_device.name
     return device
+
+
+class ExampleTask(BlueskyTask["ExampleTask.SimpleInput"]):
+    @dataclass
+    class SimpleInput(Input):
+        statement: str
+
+    def __init__(self):
+        super().__init__("Example Task")
+
+    def organise_inputs(self, *args) -> SimpleInput:
+        return ExampleTask.SimpleInput(*args)
+
+    def _run_task(self, inputs: SimpleInput) -> Generator[Msg, None, None]:
+        yield from self._add_callback_or_complete(None)
+
+
+class MultipleArgumentTask(BlueskyTask["MultipleArgumentTask.SimpleInput"]):
+    @dataclass
+    class SimpleInput(Input):
+        statement: str
+        number: int
+
+    def __init__(self):
+        super().__init__("Example Task")
+
+    def organise_inputs(self, *args) -> SimpleInput:
+        return MultipleArgumentTask.SimpleInput(*args)
+
+    def _run_task(self, inputs: SimpleInput) -> Generator[Msg, None, None]:
+        yield from self._add_callback_or_complete(None)
+
+
+class DefaultArgumentMock(BlueskyTask["DefaultArgumentMock.SimpleInput"]):
+    @dataclass
+    class SimpleInput(Input):
+        statement: str
+        number: int = 7
+
+    def __init__(self):
+        super().__init__("Example Task")
+
+    def organise_inputs(self, *args) -> SimpleInput:
+        return DefaultArgumentMock.SimpleInput(*args)
+
+    def _run_task(self, inputs: SimpleInput) -> Generator[Msg, None, None]:
+        yield from self._add_callback_or_complete(None)
