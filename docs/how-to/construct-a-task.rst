@@ -1,32 +1,44 @@
 How to construct a Task
 =======================
 
-A Task should extend BlueskyTask and overwrite BlueskyTask._run_task, unless finer control over the Status of the task
-is required, in which case BlueskyTask.execute may be overwritten instead. The Status of the task- constructed by
-execute()- should only be marked complete or failed when the task has complete: the plan stub task_callback is provided
-and passes BlueskyTask.propagate_status as a callback to a Status constructed from the Statuses of any long running
-operation monitored by the RunEngine, with the appropriate group.
+A Task should extend BlueskyTask, with a Generic argument of a Dataclass extending
+Input: this dataclass can be defined within the task itself, with forward referenced
+typing. It must overwrite BlueskyTask._run_task, and provide a
+mapping to its dataclass type in BlueskyTask.organise_args.
+BlueskyTask.execute logs the start time of the task and wraps the internal call and
+should not be overwritten.
+The Status of the task- which is created on task creation- should only be marked
+complete or failed when the task has complete: BlueskyTask.propagate_status can be passed as a
+callback to a Status constructed from the Status[es] of any long running
+operation monitored by the RunEngine.
 The Task may instead set up an async call to monitor a subscription, construct a Status to complete when one of many
-parallel tasks complete etc.: in each case, the _run_task method's final operation should yield a Msg.
+parallel tasks complete etc.
 
 .. code:: python
 
     # A Bad plan: the status of the task is assumed to be done almost as soon as the move is begun, and the the second
     #  read is unlikely to be at the end of the movement:
-    def _run_task(self, slow_moving_device: Device, distant_location: float) -> PlanOutput:
-        self.add_result(read_device(slow_moving_device))  # Read initial location
-        yield from abs_set(slow_moving_device, distant_location)
-        self.add_result(read_device(slow_moving_device))  # Read final location
+    class SetArgs(Input):
+        device: Device
+        location: Any
+
+    def organise_inputs(*args) -> SetArgs:
+        return SetArgs(*args)
+
+    def _run_task(self, args: SetArgs) -> PlanOutput:
+        self.add_result(read_device(args.device))  # Read initial location
+        yield from abs_set(args.device, args.location)
+        self.add_result(read_device(args.device))  # Read final location
         self._status.set_finished()
-        yield Msg('null')
+        yield from self._add_callback_or_complete(None)
 
     ''''''
 
     # The same plan but with consideration taken for long running movements
-    def _run_task(self, slow_moving_device: Device, distant_location: float) -> PlanOutput:
-        self.add_result(read_device(slow_moving_device))  # Read initial location
-        yield from abs_set(slow_moving_device, distant_location, group="slow movement")
-        yield from task_callback(self, group="slow movement")
+    def _run_task(self, args: SetArgs) -> PlanOutput:
+        self.add_result(read_device(args.device))  # Read initial location
+        ret: Optional[Status] = yield from abs_set(args.device, args.location)
+        yield from self._add_callback_or_complete(ret)
 
     def propagate_status(self, status: DeviceStatus) -> None:
         # Status is complete so shouldn't need a timeout?
@@ -35,7 +47,8 @@ parallel tasks complete etc.: in each case, the _run_task method's final operati
             self._status.set_exception(exception)
         else:
             self.add_result(read_device(status.device))  # Read final location
-            self._status.set_finished()  # Mark status complete when move is complete and all results available
+            self._status.set_finished()  # Mark status complete when move is complete
+                                         #  and all results available
 
 
 How big should a task be?

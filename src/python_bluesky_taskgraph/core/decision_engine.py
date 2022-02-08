@@ -101,16 +101,14 @@ class DecisionEngineControlObject(SuspendCeil):
             self._error_tasks.pop(task_name)
         self._set_signal_most_exceptions()
 
-    def run_task_graphs(self) -> None:
-        while self._run_engine.state not in ["paused", "pausing"]:
-            if self._should_stop_at_end_of_next_run:
-                self._run_engine.request_pause(False)
-            else:
-                self._run_engine(
-                    self.decision_engine_plan(
-                        self._create_next_graph(), self._known_values
-                    )
-                )
+    def run_task_graphs(self):
+        self._run_engine(self.multiple_task_graphs())
+
+    def multiple_task_graphs(self) -> Generator[Msg, None, None]:
+        while not self._should_stop_at_end_of_next_run:
+            yield from self.decision_engine_plan(
+                self._create_next_graph(self._known_values)
+            )
 
     # TODO: neaten up comment
     def _create_next_graph(self, overrides: Dict[str, Any] = None) -> TaskGraph:
