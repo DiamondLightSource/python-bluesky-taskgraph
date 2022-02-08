@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Constructing a ControlObject &mdash; bluesky_taskgraph_runner 0.0.1.pre+19.g6eb783d documentation</title>
+  <title>Constructing a ControlObject &mdash; bluesky_taskgraph_runner 0.0.1.pre+20.g93e6079 documentation</title>
       <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
       <link rel="stylesheet" href="../_static/graphviz.css" type="text/css" />
@@ -104,16 +104,22 @@ and should disable these suspenders when it does so.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Command to be called to hand over control of the RunEngine to the ControlObject. This should not be called from</span>
 <span class="c1">#  within a loop: the RunEngine will throw an exception if the upstream stack is too high. It may contain the logic</span>
 <span class="c1">#  for handing back control after a number of runs or other control logic.</span>
-<span class="k">def</span> <span class="nf">run_task_graphs</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="k">while</span> <span class="bp">self</span><span class="o">.</span><span class="n">_run_engine</span><span class="o">.</span><span class="n">state</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;paused&quot;</span><span class="p">,</span> <span class="s2">&quot;pausing&quot;</span><span class="p">]:</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_should_stop_at_end_of_next_run</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_run_engine</span><span class="o">.</span><span class="n">request_pause</span><span class="p">(</span><span class="kc">False</span><span class="p">)</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_run_engine</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">decision_engine_plan</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_create_next_graph</span><span class="p">(),</span> <span class="bp">self</span><span class="o">.</span><span class="n">_known_values</span><span class="p">))</span>
+<span class="k">def</span> <span class="nf">run_task_graphs</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">_run_engine</span><span class="p">(</span><span class="n">multiple_task_graphs</span><span class="p">())</span>
+
+<span class="c1"># Command to allow an external RunEngine to be passed multiple task graphs, without</span>
+<span class="c1">#  installing suspenders etc.</span>
+<span class="c1"># May also contain control logic</span>
+<span class="k">def</span> <span class="nf">multiple_task_graphs</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Generator</span><span class="p">[</span><span class="n">Msg</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">]:</span>
+    <span class="k">while</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_should_stop_at_end_of_next_run</span><span class="p">:</span>
+        <span class="k">yield from</span> <span class="bp">self</span><span class="o">.</span><span class="n">decision_engine_plan</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_create_next_graph</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">known_values</span><span class="p">))</span>
 
 <span class="c1"># Creates the next task graph from the known values of the ControlObject: for example, the graph might differ on the</span>
 <span class="c1">#  first run after an interlock has been triggered, or this method could include a call to an external service that</span>
 <span class="c1">#  gives a recipe to construct the next graph. The graph could optimise depending on device location etc.</span>
+<span class="c1"># Control logic should not be present, except by the throwing of known exceptions</span>
+<span class="c1">#  for Suspenders installed on the RunEngine to catch</span>
 <span class="k">def</span> <span class="nf">_create_next_graph</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">overrides</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TaskGraph</span><span class="p">:</span>
     <span class="o">...</span>
 </pre></div>

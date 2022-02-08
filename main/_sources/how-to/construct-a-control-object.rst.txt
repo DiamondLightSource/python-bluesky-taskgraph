@@ -14,16 +14,22 @@ and should disable these suspenders when it does so.
     # Command to be called to hand over control of the RunEngine to the ControlObject. This should not be called from
     #  within a loop: the RunEngine will throw an exception if the upstream stack is too high. It may contain the logic
     #  for handing back control after a number of runs or other control logic.
-    def run_task_graphs(self) -> None:
-        while self._run_engine.state not in ["paused", "pausing"]:
-            if self._should_stop_at_end_of_next_run:
-                self._run_engine.request_pause(False)
-            else:
-                self._run_engine(self.decision_engine_plan(self._create_next_graph(), self._known_values))
+    def run_task_graphs(self):
+        self._run_engine(multiple_task_graphs())
+
+    # Command to allow an external RunEngine to be passed multiple task graphs, without
+    #  installing suspenders etc.
+    # May also contain control logic
+    def multiple_task_graphs(self) -> Generator[Msg, None, None]:
+        while not self._should_stop_at_end_of_next_run:
+            yield from self.decision_engine_plan(
+                self._create_next_graph(self.known_values))
 
     # Creates the next task graph from the known values of the ControlObject: for example, the graph might differ on the
     #  first run after an interlock has been triggered, or this method could include a call to an external service that
     #  gives a recipe to construct the next graph. The graph could optimise depending on device location etc.
+    # Control logic should not be present, except by the throwing of known exceptions
+    #  for Suspenders installed on the RunEngine to catch
     def _create_next_graph(self, overrides: Dict[str, Any] = None) -> TaskGraph:
         ...
 
