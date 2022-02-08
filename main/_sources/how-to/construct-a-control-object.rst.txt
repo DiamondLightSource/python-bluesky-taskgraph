@@ -23,7 +23,8 @@ and should disable these suspenders when it does so.
     def multiple_task_graphs(self) -> Generator[Msg, None, None]:
         while not self._should_stop_at_end_of_next_run:
             yield from self.decision_engine_plan(
-                self._create_next_graph(self.known_values))
+                self._create_next_graph(self.known_values)
+            )
 
     # Creates the next task graph from the known values of the ControlObject: for example, the graph might differ on the
     #  first run after an interlock has been triggered, or this method could include a call to an external service that
