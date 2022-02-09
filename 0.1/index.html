@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>python_bluesky_taskgraph &mdash; bluesky_taskgraph_runner 0.1 documentation</title>
+      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="_static/graphviz.css" type="text/css" />
+      <link rel="stylesheet" href="_static/theme_overrides.css" type="text/css" />
+    <link rel="shortcut icon" href="_static/dls-favicon.ico"/>
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/doctools.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Installation" href="tutorials/installation.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search"  style="background: rgb(7, 43, 93)" >
+            <a href="#" class="icon icon-home"> bluesky_taskgraph_runner
+            <img src="_static/dls-logo.svg" class="logo" alt="Logo"/>
+          </a>
+              <div class="version">
+                0.1
+              </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Tutorials</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="tutorials/installation.html">Installation</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">How-to Guides</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="how-to/construct-a-control-object.html">Constructing a ControlObject</a></li>
+<li class="toctree-l1"><a class="reference internal" href="how-to/construct-a-task.html">How to construct a Task</a></li>
+<li class="toctree-l1"><a class="reference internal" href="how-to/construct-a-task.html#how-big-should-a-task-be">How big should a task be?</a></li>
+<li class="toctree-l1"><a class="reference internal" href="how-to/construct-a-task.html#optional-and-conditional-tasks">Optional and Conditional Tasks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="how-to/construct-a-task.html#task-argument-ordering">Task argument ordering</a></li>
+<li class="toctree-l1"><a class="reference internal" href="how-to/construct-a-taskgraph.html">How to construct a TaskGraph</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Explanations</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="explanations/task-in-out.html">Why are Task in/out names defined by the TaskGraph?</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="reference/contributing.html">Contributing</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/DiamondLightSource/python-bluesky-taskgraph/releases">Releases</a></li>
+<li class="toctree-l1"><a class="reference external" href="genindex.html#http://">Index</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu"  style="background: rgb(7, 43, 93)" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="#">bluesky_taskgraph_runner</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="#" class="icon icon-home"></a> &raquo;</li>
+      <li>python_bluesky_taskgraph</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/index.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="python-bluesky-taskgraph">
+<h1>python_bluesky_taskgraph<a class="headerlink" href="#python-bluesky-taskgraph" title="Permalink to this headline"></a></h1>
+<p><a class="reference external" href="https://github.com/DiamondLightSource/python-bluesky-taskgraph/actions?query=workflow%3A%22Code+CI%22"><img alt="Code CI" src="https://github.com/DiamondLightSource/python-bluesky-taskgraph/workflows/Code%20CI/badge.svg?branch=master" /></a> <a class="reference external" href="https://github.com/DiamondLightSource/python-bluesky-taskgraph/actions?query=workflow%3A%22Docs+CI%22"><img alt="Docs CI" src="https://github.com/DiamondLightSource/python-bluesky-taskgraph/workflows/Docs%20CI/badge.svg?branch=master" /></a> <a class="reference external" href="https://codecov.io/gh/DiamondLightSource/python-bluesky-taskgraph"><img alt="Test Coverage" src="https://codecov.io/gh/DiamondLightSource/python-bluesky-taskgraph/branch/master/graph/badge.svg" /></a> <a class="reference external" href="https://pypi.org/project/python_bluesky_taskgraph"><img alt="Latest PyPI version" src="https://img.shields.io/pypi/v/python_bluesky_taskgraph.svg" /></a> <a class="reference external" href="https://opensource.org/licenses/Apache-2.0"><img alt="Apache License" src="https://img.shields.io/badge/License-Apache%202.0-blue.svg" /></a></p>
+<p>A library extending the Bluesky RunEngine to allow TaskGraphs to be run: TaskGraphs are intended to encourage
+parallelism and composability compared to Bluesky native plans by breaking plans into conditional blocks, or tasks.</p>
+<p>Work related to implementing a Task Graph runner (Decision Engine) in Bluesky, akin to the VMXi task graph runner in
+Jython.</p>
+<p>The decision engine plan is passed to the RunEngine, optionally by a ControlObject which constructs multiple TaskGraphs
+according to either inbuilt logic or from a recipe involving an external source, and the RunEngine interrogates the plan
+as a Msg generator.
+A TaskGraph contains:</p>
+<ol class="arabic simple">
+<li><p>A dictionary of plan to a list of plans it is known to be dependent on or else unable to be run concurrently with</p></li>
+<li><p>A dictionary of plan to list of strings, the names of the arguments it needs
+We force this to be defined for the task graph (rather than by each task) to prevent accessing prior args
+Multiple tasks may share an input argument name
+An input argument may be overwritten later by the output of a task, so a graph should be defined such that if args
+are going to be overwritten, the overwriting tasks should depend on any that require the previous value</p></li>
+<li><p>A dictionary of plan to a list of strings, the names of the outputs it will provide
+We force this to be defined for the task graph (rather than by each task) to prevent overriding prior args
+The output strings should be at most the length of the outputs of the task, else will be truncated
+An output argument may overwrite a previous output or initial value, so care should be taken to either avoid this
+behaviour or have any overwriting tasks depend on any tasks requiring the previous value</p></li>
+</ol>
+<p>The DecisionEnginePlan is additionally passed a dictionary of string to any necessary initial conditions or known values
+atits creation. e.g.
+- Beamline configurations, name etc.
+- Any devices that will be required for the graph</p>
+<p>Decision engine plans, their decision engines, the task graphs they are initialised with, and the tasks are intended to
+be run once and then discarded.</p>
+<p>Task graphs can be composed of smaller task graphs using the depends_on function, or by simple addition of plans.
+Graph A + Graph B places every entry from each dictionary in Graph B into Graph A’s, overwriting existing keys in A
+Graph A being dependent on Graph B is equivalent to every task within Graph A being dependent on every task in Graph B,
+then Graph A = Graph A + Graph B. After depends_on or graph addition, Graph B should be discarded to prevent accidental
+running of tasks again, Graph A now contains all the information Task graphs should <strong>not</strong> contain the same task as
+another graph other than these transient cases.</p>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 16%" />
+<col style="width: 84%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p>PyPI</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">python_bluesky_taskgraph</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p>Source code</p></td>
+<td><p><a class="reference external" href="https://github.com/DiamondLightSource/python-bluesky-taskgraph">https://github.com/DiamondLightSource/python-bluesky-taskgraph</a></p></td>
+</tr>
+<tr class="row-odd"><td><p>Documentation</p></td>
+<td><p><a class="reference external" href="https://DiamondLightSource.github.io/python_bluesky_taskgraph">https://DiamondLightSource.github.io/python_bluesky_taskgraph</a></p></td>
+</tr>
+<tr class="row-even"><td><p>Releases</p></td>
+<td><p><a class="reference external" href="https://github.com/DiamondLightSource/python-bluesky-taskgraph/releases">https://github.com/DiamondLightSource/python-bluesky-taskgraph/releases</a></p></td>
+</tr>
+</tbody>
+</table>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># The TaskGraph plan can utilise the native Bluesky RunEngine: in Python 3.8 or</span>
+<span class="c1">#  above</span>
+<span class="n">RE</span> <span class="o">=</span> <span class="n">RunEngine</span><span class="p">({})</span>
+<span class="c1"># An example ControlObject, which could monitors the state of the beamline &#39;baton&#39; and returns control when</span>
+<span class="c1">#  required, or else restarts collection when the baton is free.</span>
+<span class="n">CO</span> <span class="o">=</span> <span class="n">UnattendedDataCollectionControlObject</span><span class="p">(</span><span class="n">RE</span><span class="p">)</span>
+<span class="n">CO</span><span class="o">.</span><span class="n">run_task_graphs</span><span class="p">()</span>
+
+<span class="c1"># Or else, the RunEngine can run a decision_engine_plan, wrapping a TaskGraph</span>
+<span class="n">RE</span><span class="p">(</span><span class="n">decision_engine_plan</span><span class="p">(</span><span class="n">task_graph</span><span class="p">,</span> <span class="n">variables</span> <span class="ow">or</span> <span class="p">{}))</span>
+</pre></div>
+</div>
+<section id="how-the-documentation-is-structured">
+<h2>How the documentation is structured<a class="headerlink" href="#how-the-documentation-is-structured" title="Permalink to this headline"></a></h2>
+<p>Documentation is split into four categories, also accessible from links in the
+side-bar.</p>
+<section class="columns" id="tutorials">
+<h3><a class="reference internal" href="tutorials.html"><span class="doc">Tutorials</span></a><a class="headerlink" href="#tutorials" title="Permalink to this headline"></a></h3>
+<p>Tutorials for installation, library and commandline usage. New users start here.</p>
+<div class="toctree-wrapper compound">
+<p class="caption" role="heading"><span class="caption-text">Tutorials</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="tutorials/installation.html">Installation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="tutorials/installation.html#check-your-version-of-python">Check your version of python</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tutorials/installation.html#create-a-virtual-environment">Create a virtual environment</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tutorials/installation.html#installing-the-library">Installing the library</a></li>
+</ul>
+</li>
+</ul>
+</div>
+</section>
+<section class="columns" id="how-to">
+<h3><a class="reference internal" href="how-to.html"><span class="doc">How-to Guides</span></a><a class="headerlink" href="#how-to" title="Permalink to this headline"></a></h3>
+<p>Practical step-by-step guides for the more experienced user.</p>
+<div class="toctree-wrapper compound">
+<p class="caption" role="heading"><span class="caption-text">How-to Guides</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="how-to/construct-a-control-object.html">Constructing a ControlObject</a></li>
+<li class="toctree-l1"><a class="reference internal" href="how-to/construct-a-task.html">How to construct a Task</a></li>
+<li class="toctree-l1"><a class="reference internal" href="how-to/construct-a-task.html#how-big-should-a-task-be">How big should a task be?</a></li>
+<li class="toctree-l1"><a class="reference internal" href="how-to/construct-a-task.html#optional-and-conditional-tasks">Optional and Conditional Tasks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="how-to/construct-a-task.html#task-argument-ordering">Task argument ordering</a></li>
+<li class="toctree-l1"><a class="reference internal" href="how-to/construct-a-taskgraph.html">How to construct a TaskGraph</a></li>
+</ul>
+</div>
+</section>
+<section class="columns" id="explanations">
+<h3><a class="reference internal" href="explanations.html"><span class="doc">Explanations</span></a><a class="headerlink" href="#explanations" title="Permalink to this headline"></a></h3>
+<p>Design rationales:</p>
+<div class="toctree-wrapper compound">
+<p class="caption" role="heading"><span class="caption-text">Explanations</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="explanations/task-in-out.html">Why are Task in/out names defined by the TaskGraph?</a></li>
+</ul>
+</div>
+</section>
+<section class="columns" id="reference">
+<h3><a class="reference internal" href="reference.html"><span class="doc">Reference</span></a><a class="headerlink" href="#reference" title="Permalink to this headline"></a></h3>
+<p>Practical step-by-step guides for the more experienced user.</p>
+<div class="toctree-wrapper compound">
+<p class="caption" role="heading"><span class="caption-text">Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="reference/contributing.html">Contributing</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="reference/contributing.html#running-the-tests">Running the tests</a></li>
+<li class="toctree-l2"><a class="reference internal" href="reference/contributing.html#code-styling">Code Styling</a></li>
+<li class="toctree-l2"><a class="reference internal" href="reference/contributing.html#documentation">Documentation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="reference/contributing.html#release-process">Release Process</a></li>
+<li class="toctree-l2"><a class="reference internal" href="reference/contributing.html#updating-the-tools">Updating the tools</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/DiamondLightSource/python-bluesky-taskgraph/releases">Releases</a></li>
+<li class="toctree-l1"><a class="reference external" href="genindex.html#http://">Index</a></li>
+</ul>
+</div>
+</section>
+<section class="endcolumns" id="about-the-documentation">
+<h3>About the documentation<a class="headerlink" href="#about-the-documentation" title="Permalink to this headline"></a></h3>
+<p><a class="reference external" href="https://documentation.divio.com">Why is the documentation structured this way?</a></p>
+</section>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="tutorials/installation.html" class="btn btn-neutral float-right" title="Installation" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p></p>
+  </div>
+
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+   
+  <div id="other-versions-div" class="rst-versions" data-toggle="rst-versions" role="note" aria-label="Versions" style="visibility: hidden">
+    <span class="rst-current-version" data-toggle="rst-current-version">
+      <span class="fa fa-book"> Other Versions</span>
+      0.1
+      <span class="fa fa-caret-down"></span>
+    </span>
+    <div class="rst-other-versions">
+      <dl id="other-versions-dl"/>
+    </div>
+  </div>
+  <script>
+    function addVersion(name) {
+      var dd = document.createElement("dd");
+      var a = document.createElement("a");
+      a.href = "../" + name;
+      a.innerText = name;
+      dd.appendChild(a);
+      document.getElementById('other-versions-dl').appendChild(dd);
+    }
+    // Get versions.txt and add a version for each line
+    fetch("../versions.txt").then(response => {
+      if (response.ok) {
+        document.getElementById('other-versions-div').style.visibility = "visible";
+        return response.text().then(text => text.split(/\r?\n/).forEach(addVersion))
+      }
+    });
+  </script>
+
+
+</body>
+</html>
