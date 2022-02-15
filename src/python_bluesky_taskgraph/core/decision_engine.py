@@ -13,10 +13,7 @@ from python_bluesky_taskgraph.core.task import (
 )
 from python_bluesky_taskgraph.core.task_graph import TaskGraph
 
-logger = logging.getLogger("task")
 
-
-# TODO: More informative logging name?
 # TODO: Understand what this needs to do and how to do it
 # TODO: Possibility of multiple ControlObjects, should ones exceptions stop another?
 # TODO: Allow disconnection/passing of control
@@ -60,6 +57,7 @@ class DecisionEngineControlObject(SuspendCeil):
         self._should_stop_at_end_of_next_run: bool = False
         self._error_tasks: Dict[str, int] = {}
         self._recovered_tasks: Set[str] = set()
+        self._logger = logging.getLogger(self.__class__.__name__)
 
     # TODO: Track by Task or by ExceptionType or... ?
     def handle_exception(
@@ -110,9 +108,10 @@ class DecisionEngineControlObject(SuspendCeil):
                 self._create_next_graph(self._known_values)
             )
 
-    # TODO: neaten up comment
     def _create_next_graph(self, overrides: Dict[str, Any] = None) -> TaskGraph:
         """
+        Creates the next graph to be run, from conditions known at construction time,
+        e.g.
         graph = normal_graph()
         if first_run:
             graph = graph.depends_on(first_run_graph())
@@ -137,13 +136,6 @@ class DecisionEngineControlObject(SuspendCeil):
             task_graph, variables or self._known_values, self.handle_exception
         )
         return ret
-
-    # TODO: Move the run engine loop to another thread so this can be called whenever
-    def _pause_run_engine(self, defer=False) -> None:
-        self._run_engine.request_pause(defer)
-
-    def _resume_run_engine(self) -> None:
-        self._run_engine.resume()
 
     def _clear_exceptions(self, task_name: Optional[str]) -> None:
         if task_name is None:  # Clear all signals
@@ -199,7 +191,6 @@ class DecisionEngine:
         self._task_graph = task_graph
         self._variables = dict(variables)
         self.validate()
-        # TODO: better way to prevent Task: [None] being an issue
         self._completed_tasks: Set[BlueskyTask] = set()
         self.started_tasks: Set[BlueskyTask] = set()
         self._failed_tasks: Set[str] = set()
@@ -224,7 +215,6 @@ class DecisionEngine:
             self._completed_tasks.add(task)
         else:
             # Task is finished so no timeout necessary
-            logger.warning(f"Task {task}", exc_info=exc)
             self._failed_tasks.add(task)
         if self._exception_tracking_callback:
             self._exception_tracking_callback(task.name(), exc)
@@ -255,13 +245,14 @@ class DecisionEngine:
     # TODO: Improve, handle case of outputs that are only available after input
     # TODO: Optional args
     def validate(self) -> None:
-        known_values = [
+        known_values = {
             value for _, values in self._task_graph.outputs.items() for value in values
-        ] + list(self._variables.keys())
-        needed_values = [
+        }
+        known_values.update(set(self._variables.keys()))
+        needed_values = {
             value for _, values in self._task_graph.inputs.items() for value in values
-        ]
-        unknown_values = [value for value in needed_values if value not in known_values]
+        }
+        unknown_values = {value for value in needed_values if value not in known_values}
         if unknown_values:
             raise Exception(f"Unknown values! {unknown_values}")
 
