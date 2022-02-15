@@ -63,7 +63,7 @@ class PlanTask(BlueskyTask["PlanTask.PlanInputs"]):
 
     @dataclass
     class PlanInputs(Input):
-        args: List[Any]
+        args: List[Any] = field(default_factory=list)
         kwargs: Dict[str, Any] = field(default_factory=dict)
 
     Plan = Callable[..., Generator[Msg, None, Optional[Status]]]
