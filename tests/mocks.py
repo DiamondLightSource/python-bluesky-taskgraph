@@ -28,7 +28,7 @@ def mock_device(wrapped_device: Device = None, name: str = "Mock Device") -> Dev
         wrapped_device = SynAxis(name=name)
     device = MagicMock(wraps=wrapped_device)
     device.read = MagicMock(wraps=wrapped_device.read)
-    device.name = name or wrapped_device.name
+    device.name = wrapped_device.name
     return device
 
 

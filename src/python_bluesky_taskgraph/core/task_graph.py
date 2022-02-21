@@ -14,7 +14,6 @@ def _format_task(task, dependencies, inputs, outputs):
     )
 
 
-# TODO: Likely other useful inbuilt methods to override
 class TaskGraph:
     """
     A TaskGraph contains a mapping of task to all of the tasks that must be complete

@@ -1,31 +1,39 @@
 import logging
 from abc import abstractmethod
+from dataclasses import astuple
 from time import time
 from typing import Any, Callable, Dict, Generator, Generic, List, Optional
 
 from bluesky import Msg
+from bluesky.plan_stubs import stage, unstage
+from ophyd import Device
 from ophyd.status import Status
 
-from python_bluesky_taskgraph.core.types import InputType
+from python_bluesky_taskgraph.core.types import InputType, TaskOutput
 
 
 class DecisionEngineKnownException(Exception):
-    def __init__(self, fatal=True):
-        self._is_fatal = fatal
+    def __init__(self, task_name: str, fatal=True):
+        self._source: str = task_name
+        self._is_fatal: bool = fatal
 
     @property
     def is_fatal(self) -> bool:
         return self._is_fatal
 
+    @property
+    def task_name(self) -> str:
+        return self._source
+
 
 class TaskStop(DecisionEngineKnownException):
-    def __init__(self):
-        super().__init__(False)
+    def __init__(self, task_name: str):
+        super().__init__(task_name, False)
 
 
 class TaskFail(DecisionEngineKnownException):
-    def __init__(self):
-        super().__init__(True)
+    def __init__(self, task_name: str):
+        super().__init__(task_name, True)
 
 
 class BlueskyTask(Generic[InputType]):
@@ -48,15 +56,14 @@ class BlueskyTask(Generic[InputType]):
 
     def __init__(self, name: str):
         self._name: str = name
-        # TODO: Do we want logging at the Task, DecisionEngine or ControlObject level?
-        self._logger = logging.getLogger("BlueskyTask")
+        self._logger = logging.getLogger(self.name)
         self._results: List[Any] = []
         self.status: Status = Status(obj=self)
 
     def __str__(self) -> str:
         if self.complete:
-            return f"{self._name} Complete: {self._results}"
-        return f"{self._name}: Not Finished"
+            return f"{self.name} Complete: {self._results}"
+        return f"{self.name}: Not Finished"
 
     """
     Add a callback for the status of this Task to call once the Task is complete:
@@ -79,15 +86,15 @@ class BlueskyTask(Generic[InputType]):
 
     def propagate_status(self, status: Status) -> None:
         # Status is complete so shouldn't need a timeout?
-        exception = status.exception(None)
+        exception: Optional[Exception] = status.exception(None)
         if exception:
+            self._logger.error(f"Task {self.name}: Exception! {exception}")
             self.status.set_exception(exception)
         else:
+            self._logger.info(f"Task {self.name} finished at {time()}")
             self.status.set_finished()
 
-    def _add_callback_or_complete(
-        self, status: Optional[Status]
-    ) -> Generator[Msg, None, None]:
+    def _add_callback_or_complete(self, status: Optional[Status]) -> TaskOutput:
         if status:
             status.add_callback(self.propagate_status)
         else:
@@ -97,7 +104,7 @@ class BlueskyTask(Generic[InputType]):
 
     def _fail(self, exc: Optional[Exception] = None) -> None:
         if exc is None:
-            exc = TaskStop()
+            exc = TaskStop(self.name)
         self.status.set_exception(exc)
 
     @property
@@ -117,8 +124,12 @@ class BlueskyTask(Generic[InputType]):
     """
 
     def execute(self, args) -> Generator[Msg, None, Status]:
-        self._logger.info(f"Task {self.name} begun at {time()}")
-        yield from self._run_task(self.organise_inputs(*args))
+        self._logger.info(f"Task {self.name} began at {time()}")
+        self._logger.debug(f"Task {self.name} began with args {args}")
+        try:
+            yield from self._run_task(self.organise_inputs(*args))
+        except Exception as e:
+            self.status.set_exception(e)
         return self.status
 
     @abstractmethod
@@ -126,7 +137,7 @@ class BlueskyTask(Generic[InputType]):
         ...
 
     @abstractmethod
-    def _run_task(self, inputs: InputType) -> Generator[Msg, None, None]:
+    def _run_task(self, inputs: InputType) -> TaskOutput:
         ...
 
     def add_result(self, result: Any) -> None:
@@ -147,3 +158,29 @@ class BlueskyTask(Generic[InputType]):
 
     def get_results(self, keys: List[str]) -> Dict[str, Any]:
         return {k: v for (k, v) in zip(keys, self._results) if k is not None}
+
+
+def run_stage_decorator(
+        func: Callable[[InputType], TaskOutput]
+) -> Callable[[InputType], TaskOutput]:
+    def decorated_func(args: InputType):
+        devices = {device for device in astuple(args) if isinstance(device, Device)}
+        for device in devices:
+            yield from stage(device)
+        yield from func(args)
+        for device in devices:
+            yield from unstage(device)
+
+    return decorated_func
+
+
+def task_stage_decorator(
+        func: Callable[..., BlueskyTask[InputType]]
+) -> Callable[..., BlueskyTask[InputType]]:
+    def wrapper_stage_decorator(*args, **kwargs) -> BlueskyTask[InputType]:
+        task: BlueskyTask = func(*args, **kwargs)
+        # Prevents MyPy complaints about assigning to a function
+        task.__setattr__("_run_task", run_stage_decorator(task._run_task))
+        return task
+
+    return wrapper_stage_decorator
