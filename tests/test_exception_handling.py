@@ -5,10 +5,10 @@ from unittest.mock import call
 from bluesky import Msg, RunEngine
 from bluesky.plan_stubs import abs_set
 from bluesky.suspenders import SuspenderBase
+from mocks import mock_device
 from ophyd.sim import SynAxis
 from ophyd.utils import DestroyedError, DisconnectedError
 
-from mocks import mock_device
 from python_bluesky_taskgraph.core.decision_engine import (
     DecisionEngineControlObject,
     ExceptionTrackingSuspendCeil,
@@ -76,8 +76,8 @@ class FailingDecisionEngineControlObject(DecisionEngineControlObject):
     def multiple_task_graphs(self) -> Generator[Msg, None, None]:
         for _ in range(5):
             if (
-                    not isinstance(self._exception_tracker, SuspenderBase)
-                    or not self._exception_tracker.tripped
+                not isinstance(self._exception_tracker, SuspenderBase)
+                or not self._exception_tracker.tripped
             ):
                 yield from self.decision_engine_plan(self._create_next_graph())
 
