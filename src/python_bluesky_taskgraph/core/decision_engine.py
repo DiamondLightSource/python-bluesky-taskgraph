@@ -46,7 +46,7 @@ class ExceptionTrackingSuspendCeil(SuspendCeil):
         self._logger = BASE_LOGGER.getChild(self.__class__.__name__)
 
     def handle_exception(
-        self, task_name: str, exception: Optional[Exception] = None
+            self, task_name: str, exception: Optional[Exception] = None
     ) -> None:
         """
         Tracks exceptions that accumulate by the name of the task they cause to fail,
@@ -98,7 +98,7 @@ class ExceptionTrackingLogger:
         self._error_tasks: Dict[str, int] = {}
 
     def handle_exception(
-        self, task_name: str, exception: Optional[Exception] = None
+            self, task_name: str, exception: Optional[Exception] = None
     ) -> None:
         """
         Tracks exceptions that accumulate by the name of the task they cause to fail,
@@ -159,12 +159,12 @@ class DecisionEngineControlObject:
     """
 
     def __init__(
-        self,
-        run_engine: RunEngine,
-        known_values: Dict[str, Any] = None,
-        *,
-        exception_tracker: Optional[ExceptionTrackingSuspendCeil] = None,
-        **kwargs,
+            self,
+            run_engine: RunEngine,
+            known_values: Dict[str, Any] = None,
+            *,
+            exception_tracker: Optional[ExceptionTrackingSuspendCeil] = None,
+            **kwargs,
     ):
         self._run_engine = run_engine
         self._known_values = known_values or {}
@@ -320,7 +320,7 @@ class DecisionEngine:
             t
             for t in self._task_graph.graph.keys()
             if t not in self.started_tasks
-            and self._task_graph.graph[t].issubset(self._completed_tasks)
+               and self._task_graph.graph[t].issubset(self._completed_tasks)
         ]
         task_inputs = [
             [self._variables.get(a, None) for a in self._task_graph.inputs.get(t, [])]
