@@ -161,7 +161,7 @@ class BlueskyTask(Generic[InputType]):
 
 
 def run_stage_decorator(
-        func: Callable[[InputType], TaskOutput]
+    func: Callable[[InputType], TaskOutput]
 ) -> Callable[[InputType], TaskOutput]:
     def decorated_func(args: InputType):
         devices = {device for device in astuple(args) if isinstance(device, Device)}
