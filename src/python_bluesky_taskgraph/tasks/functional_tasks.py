@@ -9,7 +9,6 @@ from ophyd import DeviceStatus
 
 from python_bluesky_taskgraph.core.task import BlueskyTask
 from python_bluesky_taskgraph.core.types import Devices, Input, InputType, TaskOutput
-from python_bluesky_taskgraph.tasks.behavioural_tasks import read_device
 
 
 class DeviceCallbackTask(BlueskyTask[InputType], ABC):
@@ -23,7 +22,7 @@ class DeviceCallbackTask(BlueskyTask[InputType], ABC):
         if isinstance(status, DeviceStatus):
             # status.device is Movable, so must be Readable
             # TODO: Need to extract the actual ax[is/es] we need...
-            self.add_result(read_device(status.device))
+            self.add_result(status.device.get())
         # TODO: What do we get if it's not DeviceStatus and is it ever going to be not
         #  DeviceStatus?
 

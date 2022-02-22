@@ -161,8 +161,7 @@ class DecisionEngineControlObject:
             run_engine: RunEngine,
             known_values: Dict[str, Any] = None,
             *,
-            exception_tracker: Optional[ExceptionTrackingSuspendCeil] = None,
-            **kwargs,
+            exception_tracker: Optional[ExceptionTrackingSuspendCeil] = None
     ):
         self._run_engine = run_engine
         self._known_values = known_values or {}

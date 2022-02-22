@@ -94,6 +94,8 @@ class BlueskyTask(Generic[InputType]):
             self._logger.info(f"Task {self.name} finished at {time()}")
             self.status.set_finished()
 
+    # TODO: Handle UUID? Is it wait UUID or scan UUID? Either way, no RunEngine to
+    #  wait here...
     def _add_callback_or_complete(self, status: Optional[Status]) -> TaskOutput:
         if status:
             status.add_callback(self.propagate_status)

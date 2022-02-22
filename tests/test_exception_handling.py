@@ -5,10 +5,10 @@ from unittest.mock import call
 from bluesky import Msg, RunEngine
 from bluesky.plan_stubs import abs_set
 from bluesky.suspenders import SuspenderBase
+from mocks import mock_device
 from ophyd.sim import SynAxis
 from ophyd.utils import DestroyedError, DisconnectedError
 
-from mocks import mock_device
 from python_bluesky_taskgraph.core.decision_engine import (
     DecisionEngineControlObject,
     ExceptionTrackingSuspendCeil,

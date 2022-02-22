@@ -24,7 +24,6 @@ from python_bluesky_taskgraph.core.types import (
     SetInputs,
     TaskOutput,
 )
-from python_bluesky_taskgraph.tasks.behavioural_tasks import read_device
 from python_bluesky_taskgraph.tasks.functional_tasks import DeviceCallbackTask, Devices
 
 
@@ -146,14 +145,14 @@ class SetDeviceTask(BlueskyTask[SetInputs]):
         self._device = device
 
     def _run_task(self, inputs: SetInputs) -> TaskOutput:
-        self.add_result(read_device(self._device))
+        self.add_result(self._device.get())
         ret: Optional[Status] = yield from abs_set(
             self._device,
             inputs.value,
             group=inputs.group or self.name,
             **inputs.kwargs or {}
         )
-        self.add_result(read_device(self._device))
+        self.add_result(self._device.get())
         yield from self._add_callback_or_complete(ret)
 
     def organise_inputs(self, *args: Any) -> SetInputs:
@@ -189,7 +188,7 @@ class SetTask(DeviceCallbackTask["SetTask.SetDeviceInputs"]):
         return SetTask.SetDeviceInputs(*args)
 
     def _run_task(self, inputs: SetDeviceInputs) -> TaskOutput:
-        self.add_result(read_device(inputs.device))
+        self.add_result(inputs.device.get())
         ret: Optional[Status] = yield from abs_set(
             inputs.device,
             inputs.value,
@@ -214,7 +213,7 @@ class SetKnownValueDeviceTask(BlueskyTask["SetKnownValueDeviceTask.SetKnownInput
         return SetKnownValueDeviceTask.SetKnownInputs(*args)
 
     def _run_task(self, inputs: SetKnownInputs) -> TaskOutput:
-        self.add_result(read_device(self._device))
+        self.add_result(self._device.get())
         ret: Optional[Status] = yield from abs_set(
             self._device, self._value, inputs.group or self.name, **inputs.kwargs
         )

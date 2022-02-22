@@ -1,15 +1,10 @@
 from dataclasses import dataclass
 from typing import Generic, TypeVar
 
-from ophyd import Device
 from ophyd.status import Status
 
 from python_bluesky_taskgraph.core.task import BlueskyTask
 from python_bluesky_taskgraph.core.types import EmptyInput, Input, TaskOutput
-
-
-def read_device(device: Device):
-    return device.read()[device.name]["value"]
 
 
 class NoOpTask(BlueskyTask[EmptyInput]):
