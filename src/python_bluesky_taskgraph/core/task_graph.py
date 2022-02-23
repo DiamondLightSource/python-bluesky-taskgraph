@@ -19,10 +19,10 @@ TaskOrGraph = Union[BlueskyTask, "TaskGraph", TaskTuple]
 
 
 def _format_task(
-        task: BlueskyTask,
-        dependencies: Set[str],
-        inputs: List[str],
-        outputs: List[str],
+    task: BlueskyTask,
+    dependencies: Set[str],
+    inputs: List[str],
+    outputs: List[str],
 ):
     return (
         f"{task.name}: depends on: {dependencies}, "
@@ -129,8 +129,8 @@ def taskgraph_run_decorator(func: Callable[..., TaskGraph]) -> Callable[..., Tas
     def wrapper_run_decorator(*args, **kwargs) -> TaskGraph:
         decorated_taskgraph = (
             func(*args, **kwargs)
-                .is_depended_on_by(CloseRunTask())
-                .depends_on(OpenRunTask())
+            .is_depended_on_by(CloseRunTask())
+            .depends_on(OpenRunTask())
         )
         return decorated_taskgraph
 
