@@ -8,7 +8,12 @@ from bluesky.protocols import Status
 from ophyd import DeviceStatus
 
 from python_bluesky_taskgraph.core.task import BlueskyTask
-from python_bluesky_taskgraph.core.types import Devices, Input, InputType, TaskOutput
+from python_bluesky_taskgraph.core.type_hints import (
+    Devices,
+    Input,
+    InputType,
+    TaskOutput,
+)
 from python_bluesky_taskgraph.tasks.behavioural_tasks import read_device
 
 
@@ -63,7 +68,7 @@ class PlanTask(BlueskyTask["PlanTask.PlanInputs"]):
 
     @dataclass
     class PlanInputs(Input):
-        args: List[Any]
+        args: List[Any] = field(default_factory=list)
         kwargs: Dict[str, Any] = field(default_factory=dict)
 
     Plan = Callable[..., Generator[Msg, None, Optional[Status]]]

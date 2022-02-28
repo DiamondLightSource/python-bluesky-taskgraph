@@ -5,7 +5,7 @@ from ophyd import Device
 from ophyd.status import Status
 
 from python_bluesky_taskgraph.core.task import BlueskyTask
-from python_bluesky_taskgraph.core.types import EmptyInput, Input, TaskOutput
+from python_bluesky_taskgraph.core.type_hints import EmptyInput, Input, TaskOutput
 
 
 def read_device(device: Device):

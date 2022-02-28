@@ -1,5 +1,5 @@
 from dataclasses import dataclass, field
-from typing import Any, Dict, Generator, List, Optional, TypeVar
+from typing import Any, Dict, Generator, Generic, List, Optional, TypeVar
 
 from bluesky import Msg
 from ophyd import Device
@@ -15,6 +15,14 @@ class Input:
 @dataclass
 class EmptyInput(Input):
     ...
+
+
+T = TypeVar("T")
+
+
+@dataclass
+class TypedInput(Input, Generic[T]):
+    obj: T
 
 
 @dataclass
