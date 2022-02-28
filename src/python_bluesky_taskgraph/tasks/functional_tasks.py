@@ -8,8 +8,12 @@ from bluesky.protocols import Status
 from ophyd import DeviceStatus
 
 from python_bluesky_taskgraph.core.task import BlueskyTask
-from python_bluesky_taskgraph.core.type_hints import Devices, Input, InputType, \
-    TaskOutput
+from python_bluesky_taskgraph.core.type_hints import (
+    Devices,
+    Input,
+    InputType,
+    TaskOutput,
+)
 from python_bluesky_taskgraph.tasks.behavioural_tasks import read_device
 
 
