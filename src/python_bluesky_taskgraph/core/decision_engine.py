@@ -13,6 +13,8 @@ from python_bluesky_taskgraph.core.task import (
 )
 from python_bluesky_taskgraph.core.task_graph import TaskGraph
 
+BASE_LOGGER = logging.getLogger(__name__)
+
 
 # TODO: Understand what this needs to do and how to do it
 # TODO: Possibility of multiple ControlObjects, should ones exceptions stop another?
@@ -57,7 +59,7 @@ class DecisionEngineControlObject(SuspendCeil):
         self._should_stop_at_end_of_next_run: bool = False
         self._error_tasks: Dict[str, int] = {}
         self._recovered_tasks: Set[str] = set()
-        self._logger = logging.getLogger(self.__class__.__name__)
+        self._logger = BASE_LOGGER.getChild(self.__class__.__name__)
 
     # TODO: Track by Task or by ExceptionType or... ?
     def handle_exception(

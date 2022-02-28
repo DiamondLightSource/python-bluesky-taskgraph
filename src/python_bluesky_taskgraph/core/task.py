@@ -6,10 +6,12 @@ from typing import Any, Callable, Dict, Generator, Generic, List, Optional
 
 from bluesky import Msg
 from bluesky.plan_stubs import stage, unstage
-from ophyd import Device
+from bluesky.protocols import Stageable
 from ophyd.status import Status
 
-from python_bluesky_taskgraph.core.types import InputType, TaskOutput
+from python_bluesky_taskgraph.core.type_hints import InputType, TaskOutput
+
+BASE_LOGGER = logging.getLogger(__name__)
 
 
 class DecisionEngineKnownException(Exception):
@@ -51,7 +53,7 @@ class BlueskyTask(Generic[InputType]):
 
     def __init__(self, name: str):
         self._name: str = name
-        self._logger = logging.getLogger(self.name)
+        self._logger = BASE_LOGGER.getChild(self.__class__.__name__).getChild(self.name)
         self._results: List[Any] = []
         self.status: Status = Status(obj=self)
 
@@ -153,10 +155,10 @@ class BlueskyTask(Generic[InputType]):
 
 
 def run_stage_decorator(
-    func: Callable[[InputType], TaskOutput]
+        func: Callable[[InputType], TaskOutput]
 ) -> Callable[[InputType], TaskOutput]:
-    def decorated_func(args: InputType):
-        devices = {device for device in astuple(args) if isinstance(device, Device)}
+    def decorated_func(args: InputType) -> TaskOutput:
+        devices = {device for device in astuple(args) if isinstance(device, Stageable)}
         for device in devices:
             yield from stage(device)
         yield from func(args)

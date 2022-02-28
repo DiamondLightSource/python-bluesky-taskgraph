@@ -9,7 +9,7 @@ from ophyd.sim import SynAxis
 from python_bluesky_taskgraph.core.decision_engine import decision_engine_plan
 from python_bluesky_taskgraph.core.task import BlueskyTask, task_stage_decorator
 from python_bluesky_taskgraph.core.task_graph import TaskGraph, taskgraph_run_decorator
-from python_bluesky_taskgraph.core.types import Input, InputType
+from python_bluesky_taskgraph.core.type_hints import Input, InputType
 from python_bluesky_taskgraph.tasks.behavioural_tasks import NoOpTask
 
 
