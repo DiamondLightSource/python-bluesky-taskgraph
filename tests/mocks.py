@@ -7,7 +7,7 @@ from ophyd import Device
 from ophyd.sim import SynAxis
 
 from python_bluesky_taskgraph.core.task import BlueskyTask
-from python_bluesky_taskgraph.core.types import Input
+from python_bluesky_taskgraph.core.type_hints import Input
 from python_bluesky_taskgraph.tasks.behavioural_tasks import NoOpTask
 
 

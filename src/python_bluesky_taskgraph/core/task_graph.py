@@ -6,7 +6,7 @@ from python_bluesky_taskgraph.tasks.stub_tasks import CloseRunTask, OpenRunTask
 
 
 @dataclass
-class TaskTuple:
+class PreparedTask:
     task: BlueskyTask
     inputs: List[str]
     outputs: List[str]
@@ -15,7 +15,7 @@ class TaskTuple:
 Graph = Dict[BlueskyTask, Set[BlueskyTask]]
 GraphInput = Dict[BlueskyTask, List[str]]
 GraphOutput = Dict[BlueskyTask, List[str]]
-TaskOrGraph = Union[BlueskyTask, "TaskGraph", TaskTuple]
+TaskOrGraph = Union[BlueskyTask, "TaskGraph", PreparedTask]
 
 
 def _format_task(
@@ -54,8 +54,8 @@ class TaskGraph:
                 {**self.outputs, **other.outputs},
             )
         if isinstance(other, BlueskyTask):
-            return self.__add__(TaskTuple(other, [], []))
-        if isinstance(other, TaskTuple):
+            return self.__add__(PreparedTask(other, [], []))
+        if isinstance(other, PreparedTask):
             return self.__add__(
                 TaskGraph(
                     {other.task: set()},
@@ -90,7 +90,7 @@ class TaskGraph:
 
     def depends_on(self, other: TaskOrGraph) -> "TaskGraph":
         if isinstance(other, BlueskyTask):
-            other = TaskTuple(other, [], [])
+            other = PreparedTask(other, [], [])
         new_dependencies = (
             set(other.graph.keys()) if isinstance(other, TaskGraph) else {other.task}
         )
@@ -108,7 +108,7 @@ class TaskGraph:
     def is_depended_on_by(self, other: TaskOrGraph) -> "TaskGraph":
         if isinstance(other, BlueskyTask):
             return self.is_depended_on_by(TaskGraph.from_task(other))
-        if isinstance(other, TaskTuple):
+        if isinstance(other, PreparedTask):
             return self.is_depended_on_by(TaskGraph.from_task_tuple(other))
         return other.depends_on(self)
 
@@ -117,7 +117,7 @@ class TaskGraph:
         return TaskGraph({task: set()}, {}, {})
 
     @staticmethod
-    def from_task_tuple(task_tuple: TaskTuple):
+    def from_task_tuple(task_tuple: PreparedTask):
         return TaskGraph(
             {task_tuple.task: set()},
             {task_tuple.task: task_tuple.outputs},
