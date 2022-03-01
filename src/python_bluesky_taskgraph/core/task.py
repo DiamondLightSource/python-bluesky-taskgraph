@@ -15,22 +15,27 @@ BASE_LOGGER = logging.getLogger(__name__)
 
 
 class DecisionEngineKnownException(Exception):
-    def __init__(self, fatal=True):
-        self._is_fatal = fatal
+    def __init__(self, task_name: str, fatal=True):
+        self._source: str = task_name
+        self._is_fatal: bool = fatal
 
     @property
     def is_fatal(self) -> bool:
         return self._is_fatal
 
+    @property
+    def task_name(self) -> str:
+        return self._source
+
 
 class TaskStop(DecisionEngineKnownException):
-    def __init__(self):
-        super().__init__(False)
+    def __init__(self, task_name: str):
+        super().__init__(task_name, False)
 
 
 class TaskFail(DecisionEngineKnownException):
-    def __init__(self):
-        super().__init__(True)
+    def __init__(self, task_name: str):
+        super().__init__(task_name, True)
 
 
 class BlueskyTask(Generic[InputType]):
@@ -101,7 +106,7 @@ class BlueskyTask(Generic[InputType]):
 
     def _fail(self, exc: Optional[Exception] = None) -> None:
         if exc is None:
-            exc = TaskStop()
+            exc = TaskStop(self.name)
         self.status.set_exception(exc)
 
     @property
@@ -123,7 +128,10 @@ class BlueskyTask(Generic[InputType]):
     def execute(self, args) -> Generator[Msg, None, Status]:
         self._logger.info(f"Task {self.name} began at {time()}")
         self._logger.debug(f"Task {self.name} began with args {args}")
-        yield from self._run_task(self.organise_inputs(*args))
+        try:
+            yield from self._run_task(self.organise_inputs(*args))
+        except Exception as e:
+            self.status.set_exception(e)
         return self.status
 
     @abstractmethod

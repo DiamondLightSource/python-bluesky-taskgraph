@@ -7,7 +7,7 @@ from ophyd import Device
 from ophyd.sim import SynAxis
 
 from python_bluesky_taskgraph.core.task import BlueskyTask
-from python_bluesky_taskgraph.core.type_hints import Input
+from python_bluesky_taskgraph.core.type_hints import Input, TypedInput
 from python_bluesky_taskgraph.tasks.behavioural_tasks import NoOpTask
 
 
@@ -28,22 +28,18 @@ def mock_device(wrapped_device: Device = None, name: str = "Mock Device") -> Dev
         wrapped_device = SynAxis(name=name)
     device = MagicMock(wraps=wrapped_device)
     device.read = MagicMock(wraps=wrapped_device.read)
-    device.name = name or wrapped_device.name
+    device.name = wrapped_device.name
     return device
 
 
-class ExampleTask(BlueskyTask["ExampleTask.SimpleInput"]):
-    @dataclass
-    class SimpleInput(Input):
-        statement: str
-
+class ExampleTask(BlueskyTask[TypedInput[str]]):
     def __init__(self):
         super().__init__("Example Task")
 
-    def organise_inputs(self, *args) -> SimpleInput:
-        return ExampleTask.SimpleInput(*args)
+    def organise_inputs(self, *args) -> TypedInput[str]:
+        return TypedInput[str](*args)
 
-    def _run_task(self, inputs: SimpleInput) -> Generator[Msg, None, None]:
+    def _run_task(self, inputs: TypedInput[str]) -> Generator[Msg, None, None]:
         yield from self._add_callback_or_complete(None)
 
 
