@@ -5,17 +5,18 @@ from unittest.mock import call
 from bluesky import Msg, RunEngine
 from bluesky.plan_stubs import abs_set
 from bluesky.suspenders import SuspenderBase
-from mocks import mock_device
+from ophyd import DeviceStatus
 from ophyd.sim import SynAxis
 from ophyd.utils import DestroyedError, DisconnectedError
 
+from mocks import mock_device
 from python_bluesky_taskgraph.core.decision_engine import (
     DecisionEngineControlObject,
     ExceptionTrackingSuspendCeil,
 )
 from python_bluesky_taskgraph.core.task import BlueskyTask, TaskFail, TaskStop
 from python_bluesky_taskgraph.core.task_graph import TaskGraph
-from python_bluesky_taskgraph.core.types import TaskOutput
+from python_bluesky_taskgraph.core.type_hints import TaskOutput
 from python_bluesky_taskgraph.tasks.stub_tasks import SetTask
 
 logging.basicConfig(level=logging.DEBUG)
@@ -65,7 +66,7 @@ class FailingDevice(SynAxis):
         super().__init__(name=name, **kwargs)
         self.fatal = fatal
 
-    def set(self, value):
+    def set(self, value) -> DeviceStatus:
         if self.fatal:
             raise DestroyedError()
         else:
