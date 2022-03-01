@@ -2,10 +2,11 @@ from typing import List
 from unittest.mock import MagicMock, call
 
 from bluesky import RunEngine
-from mocks import DefaultArgumentMock, ExampleTask, MultipleArgumentTask
 
+from mocks import DefaultArgumentMock, ExampleTask, MultipleArgumentTask
 from python_bluesky_taskgraph.core.decision_engine import decision_engine_plan
 from python_bluesky_taskgraph.core.task_graph import TaskGraph
+from python_bluesky_taskgraph.core.type_hints import TypedInput
 from python_bluesky_taskgraph.tasks.behavioural_tasks import NoOpTask
 
 
@@ -111,7 +112,7 @@ def test_task_constructs_tuple():
 
     expected_calls = [
         call.first(["expected input"]),
-        call.second(ExampleTask.SimpleInput("expected input")),
+        call.second(TypedInput[str]("expected input")),
     ]
 
     re = RunEngine({})
