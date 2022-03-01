@@ -1,8 +1,19 @@
 import logging
-from typing import Any, Callable, Dict, Generator, Iterator, List, Optional, Set, Tuple
+from typing import (
+    Any,
+    Callable,
+    Dict,
+    Generator,
+    Iterator,
+    List,
+    Optional,
+    Set,
+    Tuple,
+    Union,
+)
 
 from bluesky import Msg, RunEngine
-from bluesky.suspenders import SuspendCeil
+from bluesky.suspenders import SuspendCeil, SuspenderBase
 from ophyd import Signal
 from ophyd.status import Status
 
@@ -13,15 +24,126 @@ from python_bluesky_taskgraph.core.task import (
 )
 from python_bluesky_taskgraph.core.task_graph import TaskGraph
 
+
 BASE_LOGGER = logging.getLogger(__name__)
 
 
+def exit_run_engine_on_error_accumulation() -> Generator[Msg, None, None]:
+    raise TaskFail("Maximum Exceptions Reached!")
+
+
+class ExceptionTrackingSuspendCeil(SuspendCeil):
+    def __init__(self, suspend_thresh, *, resume_thresh=None, **kwargs):
+        self.signal = Signal(name="Exceptions Suspender")
+        super().__init__(
+            self.signal,
+            suspend_thresh,
+            resume_thresh=resume_thresh,
+            pre_plan=exit_run_engine_on_error_accumulation,
+            **kwargs,
+        )
+        # TODO: Keep the actual exceptions here?
+        self._error_tasks: Dict[str, int] = {}
+        self._recovered_tasks: Set[str] = set()
+        self._logger = BASE_LOGGER.getChild(self.__class__.__name__)
+
+    def handle_exception(
+        self, task_name: str, exception: Optional[Exception] = None
+    ) -> None:
+        """
+        Tracks exceptions that accumulate by the name of the task they cause to fail,
+        meaning [as with the VMXi case], we can track non-recovering failures and abort
+        automatic running if required.
+        If called with exception=None, we assume the task_name is in a good state/has
+        recovered.
+        :param task_name:
+        :param exception:
+        :return:
+        """
+        if not exception:
+            return self.handle_success(task_name)
+        # If we have not anticipated this error, it is a TaskFail
+        if not isinstance(exception, DecisionEngineKnownException):
+            exception = TaskFail(task_name)
+        weighting = 1
+        if exception.is_fatal:
+            weighting += self._suspend_thresh
+        if task_name not in self._error_tasks:
+            self._error_tasks[task_name] = weighting
+        else:
+            self._error_tasks[task_name] = self._error_tasks[task_name] + weighting
+            if task_name in self._recovered_tasks:
+                self._recovered_tasks.remove(task_name)
+        self._set_signal_most_exceptions()
+
+    def handle_success(self, task_name: str) -> None:
+        if task_name in self._error_tasks:
+            self._error_tasks[task_name] = 0
+            self._recovered_tasks.add(task_name)
+            self._set_signal_most_exceptions()
+
+    def _set_signal_most_exceptions(self) -> None:
+        self._sig.value = max([v for _, v in self._error_tasks.items()] or [0])
+
+    def clear_signal(self, task_name: Optional[str]) -> None:
+        if not task_name:
+            self._error_tasks.clear()
+            self._recovered_tasks.clear()
+        else:
+            self._error_tasks.pop(task_name)
+        self._set_signal_most_exceptions()
+
+
+class ExceptionTrackingLogger:
+    def __init__(self, logger):
+        self._logger = logger
+        self._error_tasks: Dict[str, int] = {}
+
+    def handle_exception(
+        self, task_name: str, exception: Optional[Exception] = None
+    ) -> None:
+        """
+        Tracks exceptions that accumulate by the name of the task they cause to fail,
+        meaning [as with the VMXi case], we can track non-recovering failures and abort
+        automatic running if required.
+        If called with exception=None, we assume the task_name is in a good state/has
+        recovered.
+        :param task_name:
+        :param exception:
+        :return:
+        """
+        if exception:
+            if task_name not in self._error_tasks:
+                self._error_tasks[task_name] = 1
+            self._logger.warn(
+                f"{task_name} threw exception {exception}! "
+                f"Consecutive errors since this task's last success: "
+                f"{self._error_tasks[task_name]}"
+            )
+        else:
+            self.handle_success(task_name)
+
+    def handle_success(self, task_name: str) -> None:
+        if task_name in self._error_tasks:
+            self._logger.info(
+                f"{task_name} recovered! "
+                f"Previous consecutive errors: "
+                f"{self._error_tasks[task_name]}"
+            )
+            self._error_tasks[task_name] = 0
+
+    def clear_signal(self, task_name: Optional[str] = None) -> None:
+        if not task_name:
+            self._error_tasks.clear()
+        else:
+            self._error_tasks.pop(task_name)
+
+
 # TODO: Understand what this needs to do and how to do it
-# TODO: Possibility of multiple ControlObjects, should ones exceptions stop another?
 # TODO: Allow disconnection/passing of control
 # TODO: Should the ControlObject instead be a plan, that constructs
 #  DecisionEnginePlans and yields from them?
-class DecisionEngineControlObject(SuspendCeil):
+class DecisionEngineControlObject:
     """
     An object that controls the production and submission of decision_engine_plans
       e.g. An object that polls an external service for recipes, conditionally
@@ -42,70 +164,34 @@ class DecisionEngineControlObject(SuspendCeil):
         self,
         run_engine: RunEngine,
         known_values: Dict[str, Any] = None,
-        suspend_thresh=3,
         *,
-        resume_thresh=None,
+        exception_tracker: Optional[ExceptionTrackingSuspendCeil] = None,
         **kwargs,
     ):
-        super().__init__(
-            Signal(name="Decision Engine Exceptions"),
-            suspend_thresh,
-            resume_thresh=resume_thresh,
-            **kwargs,
-        )
         self._run_engine = run_engine
         self._known_values = known_values or {}
-        self._run_engine.install_suspender(self)
-        self._should_stop_at_end_of_next_run: bool = False
         self._error_tasks: Dict[str, int] = {}
         self._recovered_tasks: Set[str] = set()
-        self._logger = BASE_LOGGER.getChild(self.__class__.__name__)
-
-    # TODO: Track by Task or by ExceptionType or... ?
-    def handle_exception(
-        self, task_name: str, exception: Optional[Exception] = None
-    ) -> None:
-        if not exception:
-            self.handle_success(task_name)
-        # If we have not anticipated this error, it is a TaskFail
-        if not isinstance(exception, DecisionEngineKnownException):
-            exception = TaskFail()
-        weighting = 1
-        if exception.is_fatal:
-            weighting += self._suspend_thresh
-        if task_name not in self._error_tasks:
-            self._error_tasks[task_name] = weighting
+        self._logger = logging.getLogger(self.__class__.__name__)
+        self._exception_tracker: Union[
+            ExceptionTrackingLogger, ExceptionTrackingSuspendCeil
+        ]
+        if exception_tracker:
+            self._run_engine.install_suspender(exception_tracker)
+            self._exception_tracker = exception_tracker
         else:
-            self._error_tasks[task_name] = self._error_tasks[task_name] + weighting
-            if task_name in self._recovered_tasks:
-                self._recovered_tasks.remove(task_name)
-        self._set_signal_most_exceptions()
+            self._exception_tracker = ExceptionTrackingLogger(self._logger)
 
-    def handle_success(self, task_name: str) -> None:
-        if task_name in self._error_tasks:
-            self._error_tasks[task_name] = 0
-            self._recovered_tasks.add(task_name)
-            self._set_signal_most_exceptions()
-
-    def _set_signal_most_exceptions(self) -> None:
-        self._sig.set(max([v for _, v in self._error_tasks.items()] or [0]))
-        self._run_engine.abort("Exception thrown from task")
-        if self.tripped:
-            self._run_engine.request_pause()
-
-    def clear_signal(self, task_name: Optional[str]) -> None:
-        if not task_name:
-            self._error_tasks.clear()
-            self._recovered_tasks.clear()
-        else:
-            self._error_tasks.pop(task_name)
-        self._set_signal_most_exceptions()
-
-    def run_task_graphs(self):
+    def run_task_graphs(self) -> None:
         self._run_engine(self.multiple_task_graphs())
 
     def multiple_task_graphs(self) -> Generator[Msg, None, None]:
-        while not self._should_stop_at_end_of_next_run:
+        if isinstance(self._exception_tracker, SuspenderBase):
+            while not self._exception_tracker.tripped:
+                yield from self.decision_engine_plan(
+                    self._create_next_graph(self._known_values)
+                )
+        else:
             yield from self.decision_engine_plan(
                 self._create_next_graph(self._known_values)
             )
@@ -135,7 +221,9 @@ class DecisionEngineControlObject(SuspendCeil):
         self, task_graph: TaskGraph, variables: Dict[str, Any] = None
     ) -> Generator[Msg, None, Status]:
         ret = yield from decision_engine_plan(
-            task_graph, variables or self._known_values, self.handle_exception
+            task_graph,
+            variables or self._known_values,
+            self._exception_tracker.handle_exception,
         )
         return ret
 
@@ -219,7 +307,7 @@ class DecisionEngine:
             # Task is finished so no timeout necessary
             self._failed_tasks.add(task)
         if self._exception_tracking_callback:
-            self._exception_tracking_callback(task.name(), exc)
+            self._exception_tracking_callback(task.name, exc)
 
     # TODO: How to handle failure of tasks
     @property
@@ -228,8 +316,7 @@ class DecisionEngine:
             [t.complete for t in self._task_graph.graph.keys()]
         )
 
-    def give_valid_tasks(self) -> Iterator[Tuple[BlueskyTask, List[Any]]]:
-        # TODO: iter?
+    def __iter__(self) -> Iterator[Tuple[BlueskyTask, List[Any]]]:
         # Start any pending task that has its dependencies fulfilled
         tasks = [
             t
@@ -265,6 +352,7 @@ class DecisionEngine:
         }
 
 
+# TODO: Yield a checkpoint after each task?
 def decision_engine_plan(
     task_graph: TaskGraph,
     variables: Dict[str, Any] = None,
@@ -274,7 +362,13 @@ def decision_engine_plan(
         variables = {}
     decision_engine = DecisionEngine(task_graph, variables, exception_handling)
     while not decision_engine.is_complete:
-        for (task, args) in decision_engine.give_valid_tasks():
+        for (task, args) in decision_engine:
             decision_engine.started_tasks.add(task)
-            yield from task.execute(args)
+            try:
+                yield from task.execute(args)
+            except Exception as e:
+                if exception_handling:
+                    exception_handling(task.name, e)
+                else:
+                    raise e
     return decision_engine.status
