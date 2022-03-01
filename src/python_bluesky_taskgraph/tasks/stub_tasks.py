@@ -16,7 +16,7 @@ from bluesky.protocols import Status
 from ophyd import Device
 
 from python_bluesky_taskgraph.core.task import BlueskyTask
-from python_bluesky_taskgraph.core.types import (
+from python_bluesky_taskgraph.core.type_hints import (
     EmptyInput,
     GroupArg,
     Input,

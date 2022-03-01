@@ -25,6 +25,9 @@ from python_bluesky_taskgraph.core.task import (
 from python_bluesky_taskgraph.core.task_graph import TaskGraph
 
 
+BASE_LOGGER = logging.getLogger(__name__)
+
+
 def exit_run_engine_on_error_accumulation() -> Generator[Msg, None, None]:
     raise TaskFail("Maximum Exceptions Reached!")
 
@@ -42,6 +45,7 @@ class ExceptionTrackingSuspendCeil(SuspendCeil):
         # TODO: Keep the actual exceptions here?
         self._error_tasks: Dict[str, int] = {}
         self._recovered_tasks: Set[str] = set()
+        self._logger = BASE_LOGGER.getChild(self.__class__.__name__)
 
     def handle_exception(
         self, task_name: str, exception: Optional[Exception] = None
