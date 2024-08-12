@@ -1,8 +1,8 @@
 from dataclasses import dataclass
 from typing import Generic, TypeVar
 
+from bluesky.protocols import Status
 from ophyd import Device
-from ophyd.status import Status
 
 from python_bluesky_taskgraph.core.task import BlueskyTask
 from python_bluesky_taskgraph.core.type_hints import EmptyInput, Input, TaskOutput
@@ -58,8 +58,7 @@ class ConditionalTask(BlueskyTask["ConditionalTask.ConditionalInputs"]):
     def organise_inputs(self, *args) -> ConditionalInputs:
         return ConditionalTask.ConditionalInputs(*args)
 
-    def _check_condition(self, condition_check_args: ConditionalType) -> bool:
-        ...
+    def _check_condition(self, condition_check_args: ConditionalType) -> bool: ...
 
     def propagate_status(self, status: Status) -> None:
         if isinstance(status.obj, BlueskyTask):

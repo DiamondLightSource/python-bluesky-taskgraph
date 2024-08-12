@@ -1,6 +1,7 @@
 from abc import ABC
+from collections.abc import Callable, Generator
 from dataclasses import dataclass, field
-from typing import Any, Callable, Dict, Generator, List, Optional
+from typing import Any
 
 from bluesky import Msg
 from bluesky.plan_stubs import create, read, save
@@ -68,10 +69,10 @@ class PlanTask(BlueskyTask["PlanTask.PlanInputs"]):
 
     @dataclass
     class PlanInputs(Input):
-        args: List[Any] = field(default_factory=list)
-        kwargs: Dict[str, Any] = field(default_factory=dict)
+        args: list[Any] = field(default_factory=list)
+        kwargs: dict[str, Any] = field(default_factory=dict)
 
-    Plan = Callable[..., Generator[Msg, None, Optional[Status]]]
+    Plan = Callable[..., Generator[Msg, None, Status | None]]
 
     def __init__(self, name: str, plan: Plan):
         super().__init__(name)
@@ -83,7 +84,7 @@ class PlanTask(BlueskyTask["PlanTask.PlanInputs"]):
     def _run_task(self, inputs: PlanInputs) -> TaskOutput:
         args = inputs.args or []
         kwargs = inputs.kwargs
-        ret: Optional[Status] = yield from self._plan(*args, **kwargs)
+        ret: Status | None = yield from self._plan(*args, **kwargs)
         # If the Plan returns a Status, we watch it, else we can only presume we are
         #  done
         yield from self._add_callback_or_complete(ret)

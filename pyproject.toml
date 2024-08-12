@@ -12,7 +12,10 @@ classifiers = [
     "Programming Language :: Python :: 3.12",
 ]
 description = "TaskGraph implementation of Bluesky plans"
-dependencies = [] # Add project dependencies here, e.g. ["click", "numpy"]
+dependencies = [
+    "bluesky",
+    "ophyd",
+] # Add project dependencies here, e.g. ["click", "numpy"]
 dynamic = ["version"]
 license.file = "LICENSE"
 readme = "README.md"

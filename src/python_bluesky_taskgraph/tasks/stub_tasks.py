@@ -1,5 +1,5 @@
 from dataclasses import dataclass, field
-from typing import Any, Dict, Optional
+from typing import Any
 
 from bluesky.plan_stubs import (
     abs_set,
@@ -74,8 +74,8 @@ class CloseRunTask(BlueskyTask["CloseRunTask.CloseRun"]):
 
     @dataclass
     class CloseRun(Input):
-        exit_status: Optional[str] = None
-        reason: Optional[str] = None
+        exit_status: str | None = None
+        reason: str | None = None
 
     def __init__(self):
         super().__init__("Close Run Task")
@@ -105,9 +105,9 @@ class SleepTask(BlueskyTask["SleepTask.SleepArgs"]):
 
     @dataclass
     class SleepArgs(Input):
-        sleep_time: Optional[float] = None
+        sleep_time: float | None = None
 
-    def __init__(self, name: str, sleep_time: Optional[float] = None):
+    def __init__(self, name: str, sleep_time: float | None = None):
         super().__init__(name)
         self.sleep_time = sleep_time or 1
 
@@ -147,11 +147,11 @@ class SetDeviceTask(BlueskyTask[SetInputs]):
 
     def _run_task(self, inputs: SetInputs) -> TaskOutput:
         self.add_result(read_device(self._device))
-        ret: Optional[Status] = yield from abs_set(
+        ret: Status | None = yield from abs_set(
             self._device,
             inputs.value,
             group=inputs.group or self.name,
-            **inputs.kwargs or {}
+            **inputs.kwargs or {},
         )
         self.add_result(read_device(self._device))
         yield from self._add_callback_or_complete(ret)
@@ -182,19 +182,19 @@ class SetTask(DeviceCallbackTask["SetTask.SetDeviceInputs"]):
     class SetDeviceInputs(Input):
         device: Device
         value: Any
-        group: Optional[str] = field(default=None)
-        kwargs: Dict[str, Any] = field(default_factory=dict)
+        group: str | None = field(default=None)
+        kwargs: dict[str, Any] = field(default_factory=dict)
 
     def organise_inputs(self, *args) -> SetDeviceInputs:
         return SetTask.SetDeviceInputs(*args)
 
     def _run_task(self, inputs: SetDeviceInputs) -> TaskOutput:
         self.add_result(read_device(inputs.device))
-        ret: Optional[Status] = yield from abs_set(
+        ret: Status | None = yield from abs_set(
             inputs.device,
             inputs.value,
             group=inputs.group or self.name,
-            **inputs.kwargs
+            **inputs.kwargs,
         )
         yield from self._add_callback_or_complete(ret)
 
@@ -202,8 +202,8 @@ class SetTask(DeviceCallbackTask["SetTask.SetDeviceInputs"]):
 class SetKnownValueDeviceTask(BlueskyTask["SetKnownValueDeviceTask.SetKnownInputs"]):
     @dataclass
     class SetKnownInputs(Input):
-        group: Optional[str] = field(default=None)
-        kwargs: Dict[str, Any] = field(default_factory=dict)
+        group: str | None = field(default=None)
+        kwargs: dict[str, Any] = field(default_factory=dict)
 
     def __init__(self, name: str, device: Device, value: Any):
         super().__init__(name)
@@ -215,7 +215,7 @@ class SetKnownValueDeviceTask(BlueskyTask["SetKnownValueDeviceTask.SetKnownInput
 
     def _run_task(self, inputs: SetKnownInputs) -> TaskOutput:
         self.add_result(read_device(self._device))
-        ret: Optional[Status] = yield from abs_set(
+        ret: Status | None = yield from abs_set(
             self._device, self._value, inputs.group or self.name, **inputs.kwargs
         )
         yield from self._add_callback_or_complete(ret)

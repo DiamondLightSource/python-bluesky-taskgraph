@@ -1,5 +1,8 @@
+from __future__ import annotations
+
+from collections.abc import Callable
 from dataclasses import dataclass
-from typing import Callable, Dict, List, Set, Union
+from typing import ParamSpec
 
 from python_bluesky_taskgraph.core.task import BlueskyTask
 from python_bluesky_taskgraph.tasks.stub_tasks import CloseRunTask, OpenRunTask
@@ -8,21 +11,20 @@ from python_bluesky_taskgraph.tasks.stub_tasks import CloseRunTask, OpenRunTask
 @dataclass
 class PreparedTask:
     task: BlueskyTask
-    inputs: List[str]
-    outputs: List[str]
+    inputs: list[str]
+    outputs: list[str]
 
 
-Graph = Dict[BlueskyTask, Set[BlueskyTask]]
-GraphInput = Dict[BlueskyTask, List[str]]
-GraphOutput = Dict[BlueskyTask, List[str]]
-TaskOrGraph = Union[BlueskyTask, "TaskGraph", PreparedTask]
+Graph = dict[BlueskyTask, set[BlueskyTask]]
+GraphInput = dict[BlueskyTask, list[str]]
+GraphOutput = dict[BlueskyTask, list[str]]
 
 
 def _format_task(
     task: BlueskyTask,
-    dependencies: Set[str],
-    inputs: List[str],
-    outputs: List[str],
+    dependencies: set[str],
+    inputs: list[str],
+    outputs: list[str],
 ):
     return (
         f"{task.name}: depends on: {dependencies}, "
@@ -41,12 +43,17 @@ class TaskGraph:
       task.
     """
 
-    def __init__(self, task_graph: Graph, inputs: GraphInput, outputs: GraphOutput):
-        self.graph = {k: set(v) for k, v in task_graph.items() if k}
-        self.inputs = dict(inputs)
-        self.outputs = dict(outputs)
+    def __init__(
+        self,
+        task_graph: Graph | None = None,
+        inputs: GraphInput | None = None,
+        outputs: GraphOutput | None = None,
+    ):
+        self.graph = {k: set(v) for k, v in task_graph.items() or {} if k}
+        self.inputs = dict(inputs or {})
+        self.outputs = dict(outputs or {})
 
-    def __add__(self, other: TaskOrGraph) -> "TaskGraph":
+    def __add__(self, other: BlueskyTask | TaskGraph | PreparedTask) -> TaskGraph:
         if isinstance(other, TaskGraph):
             return TaskGraph(
                 {**self.graph, **other.graph},
@@ -64,7 +71,7 @@ class TaskGraph:
                 )
             )
 
-    def __radd__(self, other: TaskOrGraph) -> "TaskGraph":
+    def __radd__(self, other: BlueskyTask | TaskGraph | PreparedTask) -> TaskGraph:
         return self.__add__(other)
 
     def __str__(self) -> str:
@@ -75,7 +82,10 @@ class TaskGraph:
         inputs = (self.inputs.get(key, []) for key in tasks)
         outputs = (self.outputs.get(key, []) for key in tasks)
         return str(
-            [_format_task(*task) for task in zip(tasks, dependencies, inputs, outputs)]
+            [
+                _format_task(*task)
+                for task in zip(tasks, dependencies, inputs, outputs, strict=True)
+            ]
         )
 
     def __len__(self) -> int:
@@ -88,7 +98,7 @@ class TaskGraph:
     Returns the combined graph to allow chaining of this method
     """
 
-    def depends_on(self, other: TaskOrGraph) -> "TaskGraph":
+    def depends_on(self, other: BlueskyTask | TaskGraph | PreparedTask) -> TaskGraph:
         if isinstance(other, BlueskyTask):
             other = PreparedTask(other, [], [])
         new_dependencies = (
@@ -105,7 +115,9 @@ class TaskGraph:
     Returns the combined graph to allow chaining of this method
     """
 
-    def is_depended_on_by(self, other: TaskOrGraph) -> "TaskGraph":
+    def is_depended_on_by(
+        self, other: BlueskyTask | TaskGraph | PreparedTask
+    ) -> TaskGraph:
         if isinstance(other, BlueskyTask):
             return self.is_depended_on_by(TaskGraph.from_task(other))
         if isinstance(other, PreparedTask):
@@ -125,8 +137,11 @@ class TaskGraph:
         )
 
 
-def taskgraph_run_decorator(func: Callable[..., TaskGraph]) -> Callable[..., TaskGraph]:
-    def wrapper_run_decorator(*args, **kwargs) -> TaskGraph:
+P = ParamSpec("P")
+
+
+def taskgraph_run_decorator(func: Callable[P, TaskGraph]) -> Callable[P, TaskGraph]:
+    def wrapper_run_decorator(*args: P.args, **kwargs: P.kwargs) -> TaskGraph:
         decorated_taskgraph = (
             func(*args, **kwargs)
             .is_depended_on_by(CloseRunTask())
