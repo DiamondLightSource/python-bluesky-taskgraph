@@ -1,6 +1,9 @@
+from collections.abc import Generator
 from dataclasses import dataclass, field
 from typing import Any
+from uuid import UUID
 
+from bluesky import Msg
 from bluesky.plan_stubs import (
     abs_set,
     close_run,
@@ -15,23 +18,10 @@ from bluesky.plan_stubs import (
 from bluesky.protocols import Status
 from ophyd import Device
 
-from python_bluesky_taskgraph.core.task import BlueskyTask
-from python_bluesky_taskgraph.core.type_hints import (
-    EmptyInput,
-    GroupArg,
-    Input,
-    KwArgs,
-    SetInputs,
-    TaskOutput,
-)
-from python_bluesky_taskgraph.tasks.behavioural_tasks import read_device
-from python_bluesky_taskgraph.tasks.functional_tasks import DeviceCallbackTask, Devices
+from bluesky_taskgraph.core.task import P, Task
 
 
-# TODO: Are these useful? Tasks should be larger than plan stubs,
-#  should be a chunk of behaviour.
-#  e.g. not abs_set(device, location) but "Move devices out of beam"
-class OpenRunTask(BlueskyTask[KwArgs]):
+class OpenRunTask(Task[UUID]):
     """
     Task to open a Bluesky run: the run_id is randomly generated and available as a
     result of this task
@@ -47,16 +37,12 @@ class OpenRunTask(BlueskyTask[KwArgs]):
     def __init__(self):
         super().__init__("Open Run Task")
 
-    def organise_inputs(self, *args) -> KwArgs:
-        return KwArgs(*args)
-
-    def _run_task(self, metadata: KwArgs) -> TaskOutput:
-        run_id = yield from open_run(**metadata.kwargs)
-        self.add_result(run_id)
-        yield from self._add_callback_or_complete(None)
+    def run(self, **kwargs: Any) -> Generator[Msg, None, UUID]:
+        run_id = yield from open_run(md=kwargs)
+        return run_id
 
 
-class CloseRunTask(BlueskyTask["CloseRunTask.CloseRun"]):
+class CloseRunTask(Task[None]):
     """
     Task to close a Bluesky run: exit_status and reason are optional.
     Default case: exit_status = None, reason = None and the values are taken from the
@@ -72,21 +58,14 @@ class CloseRunTask(BlueskyTask["CloseRunTask.CloseRun"]):
     :func:`bluesky.plan_stubs.close_run`
     """
 
-    @dataclass
-    class CloseRun(Input):
-        exit_status: str | None = None
-        reason: str | None = None
-
     def __init__(self):
         super().__init__("Close Run Task")
 
-    def organise_inputs(self, *args) -> CloseRun:
-        return CloseRunTask.CloseRun(*args)
-
-    def _run_task(self, run_close_args: CloseRun) -> TaskOutput:
-        run_id = yield from close_run(run_close_args.exit_status, run_close_args.reason)
-        self.add_result(run_id)
-        yield from self._add_callback_or_complete(None)
+    def run(
+        self, status: ExitStatus = ExitStatus, reason: str | None = None
+    ) -> Generator[Msg, None, UUID]:
+        run_id = yield from close_run()
+        return run_id
 
 
 class SleepTask(BlueskyTask["SleepTask.SleepArgs"]):

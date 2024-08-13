@@ -7,12 +7,12 @@ from bluesky.suspenders import SuspendCeil
 from ophyd import Signal
 from ophyd.status import Status
 
-from python_bluesky_taskgraph.core.task import (
-    BlueskyTask,
+from bluesky_taskgraph.core.task import (
     DecisionEngineKnownException,
+    Task,
     TaskFail,
 )
-from python_bluesky_taskgraph.core.task_graph import TaskGraph
+from bluesky_taskgraph.core.task_graph import TaskGraph
 
 BASE_LOGGER = logging.getLogger(__name__)
 
@@ -193,8 +193,8 @@ class DecisionEngine:
         self._task_graph = task_graph
         self._variables = dict(variables)
         self.validate()
-        self._completed_tasks: set[BlueskyTask] = set()
-        self.started_tasks: set[BlueskyTask] = set()
+        self._completed_tasks: set[Task] = set()
+        self.started_tasks: set[Task] = set()
         self._failed_tasks: set[str] = set()
         self._exception_tracking_callback = exception_tracking_callback
         for task in self._task_graph.graph.keys():
@@ -228,7 +228,7 @@ class DecisionEngine:
             t.complete for t in self._task_graph.graph.keys()
         )
 
-    def give_valid_tasks(self) -> Iterator[tuple[BlueskyTask, list[Any]]]:
+    def give_valid_tasks(self) -> Iterator[tuple[Task, list[Any]]]:
         # TODO: iter?
         # Start any pending task that has its dependencies fulfilled
         tasks = [

@@ -1,17 +1,16 @@
 import logging
 from abc import abstractmethod
 from collections.abc import Callable, Generator
-from dataclasses import astuple
 from time import time
-from typing import Any, Generic
+from typing import Generic, ParamSpec, TypeVar
 
 from bluesky import Msg
-from bluesky.plan_stubs import stage, unstage
-from bluesky.protocols import Stageable, Status
-
-from python_bluesky_taskgraph.core.type_hints import InputType, TaskOutput
+from ophyd.status import Status
 
 BASE_LOGGER = logging.getLogger(__name__)
+
+T = TypeVar("T")
+P = ParamSpec("P")
 
 
 class DecisionEngineKnownException(Exception):
@@ -33,7 +32,7 @@ class TaskFail(DecisionEngineKnownException):
         super().__init__(True)
 
 
-class BlueskyTask(Generic[InputType]):
+class Task(Generic[T]):
     """
     A Task to be run by Bluesky.
     Tasks are intended to be generic, but are required to have a name, which is
@@ -54,8 +53,8 @@ class BlueskyTask(Generic[InputType]):
     def __init__(self, name: str):
         self._name: str = name
         self._logger = BASE_LOGGER.getChild(self.__class__.__name__).getChild(self.name)
-        self._results: list[Any] = []
-        self.status: Status = Status(obj=self)
+        self._output: T | None = None
+        self._status: Status | None = None
 
     def __str__(self) -> str:
         if self.complete:
@@ -65,16 +64,16 @@ class BlueskyTask(Generic[InputType]):
     """
     Add a callback for the status of this Task to call once the Task is complete:
     whether successful or not.
-    This will contain a callback to the DecisionEngine, to allow it to update its Set
+    This will contain a callback to the DecisionEngine, to allow it to update its set
     of tasks that have completed
     """
 
     def add_complete_callback(self, callback: Callable[[Status], None]) -> None:
-        self.status.add_callback(callback)
+        self._status.add_callback(callback)
 
     """
     Propagate the status of another Status into the Status of this Task.
-      e.g. is a Task causes a long running movement, its Status should not be
+      e.g. if a Task causes a long running movement, its Status should not be
        considered complete until the movement is complete. Tasks that do so should
        therefore propagate the completion of the Status of the long running operation
     Tasks tracking multiple movements, or those with more precise expected statuses may
@@ -86,31 +85,29 @@ class BlueskyTask(Generic[InputType]):
         exception: Exception | None = status.exception(None)
         if exception:
             self._logger.error(f"Task {self.name}: Exception! {exception}")
-            self.status.set_exception(exception)
+            self._status.set_exception(exception)
         else:
             self._logger.info(f"Task {self.name} finished at {time()}")
-            self.status.set_finished()
+            self._status.set_finished()
 
-    def _add_callback_or_complete(self, status: Status | None) -> TaskOutput:
+    def _add_callback_or_complete(self, status: Status | None):
         if status:
             status.add_callback(self.propagate_status)
         else:
             self._logger.info(f"Task {self.name} presumed finished at {time()}")
-            self.status.set_finished()
-        yield from ()
-
-    def _fail(self, exc: Exception | None = None) -> None:
-        if exc is None:
-            exc = TaskStop()
-        self.status.set_exception(exc)
+            self._status.set_finished()
 
     @property
     def name(self) -> str:
         return self._name
 
     @property
+    def started(self) -> bool:
+        return self._status is not None
+
+    @property
     def complete(self) -> bool:
-        return self.status.done
+        return self._status is not None and self._status.done
 
     """
     To track the status of the task for the decision engine, we must create a
@@ -120,61 +117,14 @@ class BlueskyTask(Generic[InputType]):
     the decision engine, or else a ConditionalTask, etc.
     """
 
-    def execute(self, args) -> Generator[Msg, None, Status]:
+    def __call__(
+        self, *args: P.args, **kwargs: P.kwargs
+    ) -> Generator[Msg, None, Status]:
+        self.status = Status(obj=self)
         self._logger.info(f"Task {self.name} began at {time()}")
         self._logger.debug(f"Task {self.name} began with args {args}")
-        yield from self._run_task(self.organise_inputs(*args))
+        self._output = yield from self.run(*args, **kwargs)
         return self.status
 
     @abstractmethod
-    def organise_inputs(self, *args: Any) -> InputType: ...
-
-    @abstractmethod
-    def _run_task(self, inputs: InputType) -> TaskOutput: ...
-
-    def add_result(self, result: Any) -> None:
-        self._results.append(result)
-
-    def _overwrite_results(self, results: list[Any] = None) -> None:
-        if results is None:
-            results = []
-        self._results = results
-
-    """
-    Maps a List of names to the list of results we have.
-    Prior results that are not wanted can be ignored by passing None as the argument
-      in its position of the list.
-    Tail end results that are not wanted can be ignored by passing a list shorter than
-      the number of results, as zip truncates the lists
-    """
-
-    def get_results(self, keys: list[str]) -> dict[str, Any]:
-        return {
-            k: v for (k, v) in zip(keys, self._results, strict=True) if k is not None
-        }
-
-
-def run_stage_decorator(
-    func: Callable[[InputType], TaskOutput],
-) -> Callable[[InputType], TaskOutput]:
-    def decorated_func(args: InputType) -> TaskOutput:
-        devices = {device for device in astuple(args) if isinstance(device, Stageable)}
-        for device in devices:
-            yield from stage(device)
-        yield from func(args)
-        for device in devices:
-            yield from unstage(device)
-
-    return decorated_func
-
-
-def task_stage_decorator(
-    func: Callable[..., BlueskyTask[InputType]],
-) -> Callable[..., BlueskyTask[InputType]]:
-    def wrapper_stage_decorator(*args, **kwargs) -> BlueskyTask[InputType]:
-        task: BlueskyTask = func(*args, **kwargs)
-        # Prevents MyPy complaints about assigning to a function
-        task.__setattr__("_run_task", run_stage_decorator(task._run_task))
-        return task
-
-    return wrapper_stage_decorator
+    def run(self, *args: P.args, **kwargs: P.kwargs) -> Generator[Msg, None, T]: ...

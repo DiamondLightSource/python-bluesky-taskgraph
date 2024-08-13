@@ -1,16 +1,17 @@
+from collections.abc import Generator
 from dataclasses import dataclass
-from typing import Any, Dict, Generator
+from typing import Any
 from unittest.mock import ANY, MagicMock, call
 
 from bluesky import Msg, RunEngine
 from ophyd import Device
 from ophyd.sim import SynAxis
 
-from python_bluesky_taskgraph.core.decision_engine import decision_engine_plan
-from python_bluesky_taskgraph.core.task import BlueskyTask, task_stage_decorator
-from python_bluesky_taskgraph.core.task_graph import TaskGraph, taskgraph_run_decorator
-from python_bluesky_taskgraph.core.type_hints import Input, InputType
-from python_bluesky_taskgraph.tasks.behavioural_tasks import NoOpTask
+from bluesky_taskgraph.core.decision_engine import decision_engine_plan
+from bluesky_taskgraph.core.task import BlueskyTask, task_stage_decorator
+from bluesky_taskgraph.core.task_graph import TaskGraph, taskgraph_run_decorator
+from bluesky_taskgraph.core.type_hints import Input, InputType
+from bluesky_taskgraph.tasks.behavioural_tasks import NoOpTask
 
 
 def generate_basic_taskgraph():
@@ -46,7 +47,7 @@ def test_no_run_opened():
     run_starts = RE._run_start_uids = MagicMock()
     RE(decision_engine_plan(generate_basic_taskgraph(), {}))
 
-    assert not call.append(ANY) in run_starts.method_calls
+    assert call.append(ANY) not in run_starts.method_calls
 
 
 def test_run_opened_with_decorator():
@@ -57,7 +58,7 @@ def test_run_opened_with_decorator():
     assert call.append(ANY) in run_starts.method_calls
 
 
-def get_expected_arguments() -> Dict[str, Any]:
+def get_expected_arguments() -> dict[str, Any]:
     return {
         "first_device": MagicMock(wraps=SynAxis(name="first_device")),
         "second_device": MagicMock(wraps=SynAxis(name="second_device")),
@@ -94,9 +95,9 @@ def test_no_devices_staged():
     RE = RunEngine({})
     RE(decision_engine_plan(generate_basic_taskgraph(), args))
 
-    assert not call.stage(ANY) in args["first_device"].method_calls
-    assert not call.stage(ANY) in args["second_device"].method_calls
-    assert not call.stage(ANY) in args["location"].method_calls
+    assert call.stage(ANY) not in args["first_device"].method_calls
+    assert call.stage(ANY) not in args["second_device"].method_calls
+    assert call.stage(ANY) not in args["location"].method_calls
 
 
 def test_only_devices_staged():
@@ -106,4 +107,4 @@ def test_only_devices_staged():
 
     assert call.stage() in args["first_device"].method_calls
     assert call.stage() in args["second_device"].method_calls
-    assert not call.stage() in args["location"].method_calls
+    assert call.stage() not in args["location"].method_calls

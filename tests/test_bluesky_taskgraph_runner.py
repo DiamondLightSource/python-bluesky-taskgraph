@@ -1,7 +1,7 @@
 import subprocess
 import sys
 
-from python_bluesky_taskgraph import __version__
+from bluesky_taskgraph import __version__
 
 
 def test_cli_version():

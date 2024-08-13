@@ -10,4 +10,3 @@ the initial wavelength value, or adjusting the refining task to call its input "
 
 This also aims to prevent the confusion of exactly what "wavelength" refers to: is it the current wavelength value, a
 device that controls wavelength, a target value etc.
-

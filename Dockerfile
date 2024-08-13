@@ -11,4 +11,3 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # Set up a virtual environment and put it in PATH
 RUN python -m venv /venv
 ENV PATH=/venv/bin:$PATH
-

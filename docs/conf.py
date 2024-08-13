@@ -4,7 +4,7 @@
 # list see the documentation:
 # https://www.sphinx-doc.org/en/master/usage/configuration.html
 
-import python_bluesky_taskgraph
+import bluesky_taskgraph
 
 # -- General configuration ------------------------------------------------
 
@@ -12,7 +12,7 @@ import python_bluesky_taskgraph
 project = "bluesky_taskgraph_runner"
 
 # The full version, including alpha/beta/rc tags.
-release = python_bluesky_taskgraph.__version__
+release = bluesky_taskgraph.__version__
 
 # The short X.Y version.
 if "+" in release:

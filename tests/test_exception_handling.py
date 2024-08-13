@@ -1,17 +1,17 @@
-from typing import Any, Dict
+from typing import Any
 from unittest.mock import call
 
 from bluesky import RunEngine
 from bluesky.suspenders import SuspendCeil
-from mocks import mock_device
 from ophyd import DeviceStatus, Signal
 from ophyd.sim import SynAxis
 from ophyd.utils import DestroyedError
 
-from python_bluesky_taskgraph.core.decision_engine import DecisionEngineControlObject
-from python_bluesky_taskgraph.core.task import TaskFail, TaskStop
-from python_bluesky_taskgraph.core.task_graph import TaskGraph
-from python_bluesky_taskgraph.tasks.stub_tasks import SetTask
+from bluesky_taskgraph.core.decision_engine import DecisionEngineControlObject
+from bluesky_taskgraph.core.task import TaskFail, TaskStop
+from bluesky_taskgraph.core.task_graph import TaskGraph
+from bluesky_taskgraph.tasks.stub_tasks import SetTask
+from mocks import mock_device
 
 
 class FailingDevice(SynAxis):
@@ -26,7 +26,7 @@ class FailingDevice(SynAxis):
 
 
 class FailingDecisionEngineControlObject(DecisionEngineControlObject):
-    def __init__(self, run_engine: RunEngine, known_values: Dict[str, Any] = None):
+    def __init__(self, run_engine: RunEngine, known_values: dict[str, Any] = None):
         super().__init__(run_engine=run_engine, known_values=known_values)
         self._count = Signal(name="Run tasks 5 times at most")
         self._count.value = 0
@@ -37,7 +37,7 @@ class FailingDecisionEngineControlObject(DecisionEngineControlObject):
             self._run_engine(self.decision_engine_plan(self._create_next_graph()))
             self._count.value += 1
 
-    def _create_next_graph(self, overrides: Dict[str, Any] = None) -> TaskGraph:
+    def _create_next_graph(self, overrides: dict[str, Any] = None) -> TaskGraph:
         prior_task = SetTask("Prior task")
         failing_task = RecoveringFromNonFatalExceptionSetTask("Failing Task")
         future_task = SetTask("Future task")
