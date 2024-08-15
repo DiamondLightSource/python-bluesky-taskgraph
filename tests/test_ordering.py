@@ -3,10 +3,10 @@ from unittest.mock import MagicMock, Mock, call
 from bluesky import RunEngine
 from ophyd.sim import SynAxis
 
-from python_bluesky_taskgraph.core.decision_engine import decision_engine_plan
-from python_bluesky_taskgraph.core.task_graph import TaskGraph
-from python_bluesky_taskgraph.tasks.behavioural_tasks import NoOpTask
-from python_bluesky_taskgraph.tasks.stub_tasks import SetTask
+from bluesky_taskgraph.core.decision_engine import decision_engine_plan
+from bluesky_taskgraph.core.task_graph import TaskGraph
+from bluesky_taskgraph.tasks.behavioural_tasks import NoOpTask
+from bluesky_taskgraph.tasks.stub_tasks import SetTask
 
 """
 Suggested method of composing tasks:

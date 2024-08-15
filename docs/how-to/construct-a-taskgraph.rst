@@ -38,5 +38,3 @@ with this behaviour in mind.
     graph = simple_task_graph().is_depended_on_by(task_graph_with_outputs())
 
     # These operations can be chained
-
-

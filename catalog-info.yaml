@@ -1,0 +1,10 @@
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: bluesky-taskgraph
+  title: bluesky-taskgraph
+  description: TaskGraph implementation of Bluesky plans
+spec:
+  type: documentation
+  lifecycle: experimental
+  owner: user:qwe67581

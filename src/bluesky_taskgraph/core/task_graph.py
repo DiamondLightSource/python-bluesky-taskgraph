@@ -1,28 +1,17 @@
-from dataclasses import dataclass
-from typing import Callable, Dict, List, Set, Union
+from __future__ import annotations
 
-from python_bluesky_taskgraph.core.task import BlueskyTask
-from python_bluesky_taskgraph.tasks.stub_tasks import CloseRunTask, OpenRunTask
+from collections.abc import Callable
+from typing import ParamSpec
 
-
-@dataclass
-class PreparedTask:
-    task: BlueskyTask
-    inputs: List[str]
-    outputs: List[str]
-
-
-Graph = Dict[BlueskyTask, Set[BlueskyTask]]
-GraphInput = Dict[BlueskyTask, List[str]]
-GraphOutput = Dict[BlueskyTask, List[str]]
-TaskOrGraph = Union[BlueskyTask, "TaskGraph", PreparedTask]
+from bluesky_taskgraph.core.task import Task
+from bluesky_taskgraph.tasks.stub_tasks import CloseRunTask, OpenRunTask
 
 
 def _format_task(
-    task: BlueskyTask,
-    dependencies: Set[str],
-    inputs: List[str],
-    outputs: List[str],
+    task: Task,
+    dependencies: set[str],
+    inputs: list[str],
+    outputs: list[str],
 ):
     return (
         f"{task.name}: depends on: {dependencies}, "
@@ -41,19 +30,24 @@ class TaskGraph:
       task.
     """
 
-    def __init__(self, task_graph: Graph, inputs: GraphInput, outputs: GraphOutput):
-        self.graph = {k: set(v) for k, v in task_graph.items() if k}
-        self.inputs = dict(inputs)
-        self.outputs = dict(outputs)
+    def __init__(
+        self,
+        task_graph: Graph | None = None,
+        inputs: GraphInput | None = None,
+        outputs: GraphOutput | None = None,
+    ):
+        self.graph = {k: set(v) for k, v in task_graph.items() or {} if k}
+        self.inputs = dict(inputs or {})
+        self.outputs = dict(outputs or {})
 
-    def __add__(self, other: TaskOrGraph) -> "TaskGraph":
+    def __add__(self, other: Task | TaskGraph | PreparedTask) -> TaskGraph:
         if isinstance(other, TaskGraph):
             return TaskGraph(
                 {**self.graph, **other.graph},
                 {**self.inputs, **other.inputs},
                 {**self.outputs, **other.outputs},
             )
-        if isinstance(other, BlueskyTask):
+        if isinstance(other, Task):
             return self.__add__(PreparedTask(other, [], []))
         if isinstance(other, PreparedTask):
             return self.__add__(
@@ -64,7 +58,7 @@ class TaskGraph:
                 )
             )
 
-    def __radd__(self, other: TaskOrGraph) -> "TaskGraph":
+    def __radd__(self, other: Task | TaskGraph | PreparedTask) -> TaskGraph:
         return self.__add__(other)
 
     def __str__(self) -> str:
@@ -75,7 +69,10 @@ class TaskGraph:
         inputs = (self.inputs.get(key, []) for key in tasks)
         outputs = (self.outputs.get(key, []) for key in tasks)
         return str(
-            [_format_task(*task) for task in zip(tasks, dependencies, inputs, outputs)]
+            [
+                _format_task(*task)
+                for task in zip(tasks, dependencies, inputs, outputs, strict=True)
+            ]
         )
 
     def __len__(self) -> int:
@@ -88,8 +85,8 @@ class TaskGraph:
     Returns the combined graph to allow chaining of this method
     """
 
-    def depends_on(self, other: TaskOrGraph) -> "TaskGraph":
-        if isinstance(other, BlueskyTask):
+    def depends_on(self, other: Task | TaskGraph | PreparedTask) -> TaskGraph:
+        if isinstance(other, Task):
             other = PreparedTask(other, [], [])
         new_dependencies = (
             set(other.graph.keys()) if isinstance(other, TaskGraph) else {other.task}
@@ -105,15 +102,15 @@ class TaskGraph:
     Returns the combined graph to allow chaining of this method
     """
 
-    def is_depended_on_by(self, other: TaskOrGraph) -> "TaskGraph":
-        if isinstance(other, BlueskyTask):
+    def is_depended_on_by(self, other: Task | TaskGraph | PreparedTask) -> TaskGraph:
+        if isinstance(other, Task):
             return self.is_depended_on_by(TaskGraph.from_task(other))
         if isinstance(other, PreparedTask):
             return self.is_depended_on_by(TaskGraph.from_task_tuple(other))
         return other.depends_on(self)
 
     @staticmethod
-    def from_task(task: BlueskyTask):
+    def from_task(task: Task):
         return TaskGraph({task: set()}, {}, {})
 
     @staticmethod
@@ -125,8 +122,11 @@ class TaskGraph:
         )
 
 
-def taskgraph_run_decorator(func: Callable[..., TaskGraph]) -> Callable[..., TaskGraph]:
-    def wrapper_run_decorator(*args, **kwargs) -> TaskGraph:
+P = ParamSpec("P")
+
+
+def taskgraph_run_decorator(func: Callable[P, TaskGraph]) -> Callable[P, TaskGraph]:
+    def wrapper_run_decorator(*args: P.args, **kwargs: P.kwargs) -> TaskGraph:
         decorated_taskgraph = (
             func(*args, **kwargs)
             .is_depended_on_by(CloseRunTask())

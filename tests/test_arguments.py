@@ -1,16 +1,15 @@
-from typing import List
 from unittest.mock import MagicMock, call
 
 from bluesky import RunEngine
+
+from bluesky_taskgraph.core.decision_engine import decision_engine_plan
+from bluesky_taskgraph.core.task_graph import TaskGraph
+from bluesky_taskgraph.tasks.behavioural_tasks import NoOpTask
 from mocks import DefaultArgumentMock, ExampleTask, MultipleArgumentTask
 
-from python_bluesky_taskgraph.core.decision_engine import decision_engine_plan
-from python_bluesky_taskgraph.core.task_graph import TaskGraph
-from python_bluesky_taskgraph.tasks.behavioural_tasks import NoOpTask
 
-
-def get_results(entries: List[str]):
-    return zip(entries, {"passed"})
+def get_results(entries: list[str]):
+    return zip(entries, {"passed"}, strict=False)
 
 
 def test_taskgraph_passes_args():
@@ -105,9 +104,7 @@ def test_task_constructs_tuple():
 
     manager.configure_mock(first=first_task.execute, second=first_task._run_task)
 
-    tasks = TaskGraph(
-        {first_task: set()}, {first_task: ["input"]}, {first_task: list()}
-    )
+    tasks = TaskGraph({first_task: set()}, {first_task: ["input"]}, {first_task: []})
 
     expected_calls = [
         call.first(["expected input"]),
@@ -133,7 +130,7 @@ def test_task_constructs_more_complicated_tuple():
     manager.configure_mock(first=first_task.execute, second=first_task._run_task)
 
     tasks = TaskGraph(
-        {first_task: set()}, {first_task: ["input", "second"]}, {first_task: list()}
+        {first_task: set()}, {first_task: ["input", "second"]}, {first_task: []}
     )
 
     expected_calls = [
@@ -159,9 +156,7 @@ def test_task_constructs_tuple_with_default_args():
 
     manager.configure_mock(first=first_task.execute, second=first_task._run_task)
 
-    tasks = TaskGraph(
-        {first_task: set()}, {first_task: ["input"]}, {first_task: list()}
-    )
+    tasks = TaskGraph({first_task: set()}, {first_task: ["input"]}, {first_task: []})
 
     expected_calls = [
         call.first(["expected input"]),
@@ -187,7 +182,7 @@ def test_task_constructs_tuple_with_overwritten_default_args():
     manager.configure_mock(first=first_task.execute, second=first_task._run_task)
 
     tasks = TaskGraph(
-        {first_task: set()}, {first_task: ["input", "second"]}, {first_task: list()}
+        {first_task: set()}, {first_task: ["input", "second"]}, {first_task: []}
     )
 
     expected_calls = [

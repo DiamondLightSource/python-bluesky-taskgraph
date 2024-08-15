@@ -46,4 +46,3 @@ The library should now be installed and the commandline interface on your path.
 You can check the version that has been installed by typing::
 
     python_bluesky_taskgraph --version
-
